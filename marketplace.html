@@ -174,10 +174,48 @@
   .nation-btn.igypt.active { color:#c9a84c; }
   .nation-btn.igypt.active::after { background:#c9a84c; }
   /* Elven theme */
-  .nation-btn.elven { color:#507760; }
-  .nation-btn.elven:hover { color:#4ade80; }
-  .nation-btn.elven.active { color:#4ade80; }
-  .nation-btn.elven.active::after { background:#4ade80; }
+  .nation-btn.elven { color:#6b5fa0; }
+  .nation-btn.elven:hover { color:#a78bfa; }
+  .nation-btn.elven.active { color:#a78bfa; }
+  .nation-btn.elven.active::after { background:#a78bfa; }
+
+  .nation-btn.frontier { color:#507760; }
+  .nation-btn.frontier:hover { color:#4ade80; }
+  .nation-btn.frontier.active { color:#4ade80; }
+  .nation-btn.frontier.active::after { background:#4ade80; }
+
+  .nation-btn.dwarven { color:#a07040; }
+  .nation-btn.dwarven:hover { color:#d97706; }
+  .nation-btn.dwarven.active { color:#d97706; }
+  .nation-btn.dwarven.active::after { background:#d97706; }
+
+  .nation-btn.dragon { color:#904040; }
+  .nation-btn.dragon:hover { color:#ef4444; }
+  .nation-btn.dragon.active { color:#ef4444; }
+  .nation-btn.dragon.active::after { background:#ef4444; }
+
+  .nation-btn.durgan { color:#5b6abf; }
+  .nation-btn.durgan:hover { color:#818cf8; }
+  .nation-btn.durgan.active { color:#818cf8; }
+  .nation-btn.durgan.active::after { background:#818cf8; }
+
+  .nation-btn.pirate { color:#0e7490; }
+  .nation-btn.pirate:hover { color:#22d3ee; }
+  .nation-btn.pirate.active { color:#22d3ee; }
+  .nation-btn.pirate.active::after { background:#22d3ee; }
+
+  .nation-btn.ork { color:#7f1d1d; }
+  .nation-btn.ork:hover { color:#dc2626; }
+  .nation-btn.ork.active { color:#dc2626; }
+  .nation-btn.ork.active::after { background:#dc2626; }
+
+  .pu-nft-card { cursor:pointer; border-radius:8px; border:2px solid transparent; overflow:hidden; background:#0a0608; transition:all .2s; position:relative; }
+  .pu-nft-card:hover { border-color:#c9a84c66; }
+  .pu-nft-card.selected { border-color:#c9a84c; box-shadow:0 0 12px #c9a84c44; }
+  .pu-nft-card img { width:100%; aspect-ratio:1; object-fit:cover; display:block; }
+  .pu-nft-card .pu-card-name { font-size:10px; color:#e8d5b0; padding:4px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pu-nft-card .pu-card-check { position:absolute; top:4px; right:4px; background:#c9a84c; color:#0a0608; width:18px; height:18px; border-radius:50%; display:none; align-items:center; justify-content:center; font-size:12px; font-weight:700; }
+  .pu-nft-card.selected .pu-card-check { display:flex; }
 
   /* Elven theme overrides (applied to body) */
   body.theme-elven { background:#040a06; }
@@ -278,14 +316,20 @@
 
 <div class="nation-bar">
   <button class="nation-btn igypt active" onclick="switchNation('igypt')">Bazaar of Igypt</button>
-  <button class="nation-btn elven" onclick="switchNation('elven')">Elven Groves</button>
+  <button class="nation-btn elven" onclick="switchNation('elven')">Elven Emporium</button>
+  <button class="nation-btn frontier" onclick="switchNation('frontier')">Magic Grove</button>
+  <button class="nation-btn dwarven" onclick="switchNation('dwarven')">Dwarven Fortress</button>
+  <button class="nation-btn dragon" onclick="switchNation('dragon')">Dragon's Nest</button>
+  <button class="nation-btn durgan" onclick="switchNation('durgan')">Durgan Dynasty</button>
+  <button class="nation-btn pirate" onclick="switchNation('pirate')">Pirate's Cove</button>
+  <button class="nation-btn ork" onclick="switchNation('ork')">Ork Warcamp</button>
 </div>
 
-<nav>
-  <button class="on" onclick="tab('browse')">Browse</button>
+<nav id="mainNav">
+  <button class="on" onclick="tab('browse')" data-igypt-only="1">Browse</button>
   <button onclick="tab('catalog')">All ToT NFTs</button>
-  <button onclick="tab('wallet')">My NFTs</button>
-  <button onclick="tab('listings')">My Listings</button>
+  <button onclick="tab('wallet')" data-igypt-only="1">My NFTs</button>
+  <button onclick="tab('listings')" data-igypt-only="1">My Listings</button>
   <button onclick="tab('powerup')">Power Up</button>
 </nav>
 
@@ -386,36 +430,260 @@
     <!-- Elven Power Up -->
     <div id="pu-elven" style="display:none;">
       <div class="hero">
-        <h2 style="font-family:Georgia,serif;letter-spacing:1px;">Blessings of the <span>Ancient Groves</span></h2>
-        <p>Channel your WETH through the roots of the World Tree. EGP and JCGWR entwine into LP tokens, bound to the NFT's spirit grove for all seasons.</p>
+        <h2 style="font-family:Georgia,serif;letter-spacing:1px;">Welcome to the <span>Elven Emporium</span></h2>
+        <p>Channel your WETH through the Emporium's enchanted vaults. EGP pairs with a sacred token of your choosing, woven into LP and bound to the NFT forever.</p>
+      </div>
+      <div style="max-width:600px;margin:0 auto;">
+        <div style="background:#0e0a14;border:1px solid #a78bfa12;border-radius:14px;padding:20px;margin-bottom:20px;">
+          <h3 style="color:#a78bfa;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">Choose Your Rite</h3>
+          <select id="puPairSelect" onchange="onPairChange()" style="width:100%;background:#0a0608;color:#c4b5fd;border:1px solid #a78bfa22;padding:10px 12px;font-size:14px;border-radius:8px;font-family:Georgia,serif;outline:none;margin-bottom:12px;cursor:pointer;"></select>
+          <div id="puPairDesc" style="font-size:13px;color:#d4c0f0;text-align:center;"></div>
+        </div>
+        <div style="background:#0e0a14;border:1px solid #a78bfa12;border-radius:14px;padding:20px;margin-bottom:20px;">
+          <h3 style="color:#a78bfa;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">The Rite of Enchantment</h3>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#a78bfa22;color:#a78bfa;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">I</div>
+            <div style="font-size:13px;color:#d4c0f0;">Your WETH splits into two arcane streams</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#a78bfa22;color:#a78bfa;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">II</div>
+            <div style="font-size:13px;color:#d4c0f0;">Half becomes <span style="color:#c4b5fd;font-weight:600;">EGP</span>, half flows to the paired token</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#a78bfa22;color:#a78bfa;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">III</div>
+            <div style="font-size:13px;color:#d4c0f0;">Fused into EGP LP and inscribed upon the NFT</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="background:#a78bfa22;color:#a78bfa;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;">&#9883;</div>
+            <div style="font-size:13px;color:#c4b5fd;font-weight:600;">Sealed forever &mdash; arcane power deepens, impact grows in the real world</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Frontier Power Up -->
+    <div id="pu-frontier" style="display:none;">
+      <div class="hero">
+        <h2 style="font-family:Georgia,serif;letter-spacing:1px;">Enchantments of the <span>Magic Grove</span></h2>
+        <p>Infuse your WETH into the Grove's ancient roots. BTN and PR25 crystallize into LP tokens, bound to the NFT's spirit for all time.</p>
       </div>
       <div style="max-width:600px;margin:0 auto;">
         <div style="background:#0a120c;border:1px solid #4ade8012;border-radius:14px;padding:20px;margin-bottom:20px;">
-          <h3 style="color:#4ade80;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">The Rite of Roots</h3>
+          <h3 style="color:#4ade80;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">The Grove Ritual</h3>
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
             <div style="background:#4ade8022;color:#4ade80;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">I</div>
-            <div style="font-size:13px;color:#b0e8c0;">Your WETH flows into two sacred streams</div>
+            <div style="font-size:13px;color:#b0e8c0;">Your WETH is split between two enchanted roots</div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
             <div style="background:#4ade8022;color:#4ade80;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">II</div>
-            <div style="font-size:13px;color:#b0e8c0;">Half nourishes <span style="color:#86efac;font-weight:600;">EGP</span> (Elven Grove Points), half plants <span style="color:#86efac;font-weight:600;">JCGWR</span> (trees)</div>
+            <div style="font-size:13px;color:#b0e8c0;">Half becomes <span style="color:#86efac;font-weight:600;">BTN</span> (Button), half becomes <span style="color:#86efac;font-weight:600;">PR25</span> (children's blessings)</div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
             <div style="background:#4ade8022;color:#4ade80;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">III</div>
-            <div style="font-size:13px;color:#b0e8c0;">Woven into EGP/JCGWR LP and rooted in the NFT's grove</div>
+            <div style="font-size:13px;color:#b0e8c0;">Woven into BTN/PR25 LP and bound to the NFT's spirit</div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
             <div style="background:#4ade8022;color:#4ade80;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;">&#127807;</div>
-            <div style="font-size:13px;color:#86efac;font-weight:600;">Rooted forever &mdash; the grove deepens, trees grow in the real world</div>
+            <div style="font-size:13px;color:#86efac;font-weight:600;">Sealed forever &mdash; the grove deepens, children are blessed</div>
           </div>
         </div>
         <div style="background:#0a120c;border:1px solid #4ade8012;border-radius:14px;padding:20px;margin-bottom:20px;">
-          <h3 style="color:#4ade80;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">Sacred Tokens of the Groves</h3>
+          <h3 style="color:#4ade80;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">Tokens of the Grove</h3>
           <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #4ade800d;font-size:13px;">
-            <span style="color:#86efac;font-weight:600;">EGP</span><span style="color:#b0e8c0;">Elven Grove Points &mdash; DEX, INT & WIS for your heroes</span>
+            <span style="color:#86efac;font-weight:600;">BTN</span><span style="color:#b0e8c0;">Button &mdash; WIS, CON & DEX for your heroes</span>
           </div>
           <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;">
-            <span style="color:#86efac;font-weight:600;">JCGWR</span><span style="color:#b0e8c0;">Each token = 1 real tree planted in the world</span>
+            <span style="color:#86efac;font-weight:600;">PR25</span><span style="color:#b0e8c0;">Each token = 1 child blessed through education programs</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dwarven Power Up -->
+    <div id="pu-dwarven" style="display:none;">
+      <div class="hero">
+        <h2 style="font-family:Georgia,serif;letter-spacing:1px;">Halls of the <span>Dwarven Fortress</span></h2>
+        <p>Pour your WETH into the great forge beneath the mountain. LGP and PR25 are smelted into LP tokens, riveted to the NFT's foundation stone forever.</p>
+      </div>
+      <div style="max-width:600px;margin:0 auto;">
+        <div style="background:#14100a;border:1px solid #d9770612;border-radius:14px;padding:20px;margin-bottom:20px;">
+          <h3 style="color:#d97706;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">The Rite of the Forge</h3>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#d9770622;color:#d97706;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">I</div>
+            <div style="font-size:13px;color:#e8d0a0;">Your WETH is split between two crucibles</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#d9770622;color:#d97706;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">II</div>
+            <div style="font-size:13px;color:#e8d0a0;">Half becomes <span style="color:#fbbf24;font-weight:600;">LGP</span> (Legacy Points), half becomes <span style="color:#fbbf24;font-weight:600;">PR25</span> (children's blessings)</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#d9770622;color:#d97706;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">III</div>
+            <div style="font-size:13px;color:#e8d0a0;">Forged into LGP/PR25 LP and riveted to the NFT's foundation</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="background:#d9770622;color:#d97706;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;">&#9879;</div>
+            <div style="font-size:13px;color:#fbbf24;font-weight:600;">Sealed forever &mdash; the fortress endures, children are blessed</div>
+          </div>
+        </div>
+        <div style="background:#14100a;border:1px solid #d9770612;border-radius:14px;padding:20px;margin-bottom:20px;">
+          <h3 style="color:#d97706;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">Tokens of the Fortress</h3>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #d977060d;font-size:13px;">
+            <span style="color:#fbbf24;font-weight:600;">LGP</span><span style="color:#e8d0a0;">Legacy Points &mdash; CON for your heroes</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;">
+            <span style="color:#fbbf24;font-weight:600;">PR25</span><span style="color:#e8d0a0;">Each token = 1 child blessed through education programs</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dragon Power Up -->
+    <div id="pu-dragon" style="display:none;">
+      <div class="hero">
+        <h2 style="font-family:Georgia,serif;letter-spacing:1px;">The <span>Dragon's Nest</span></h2>
+        <p>Sacrifice your WETH to the dragon's hoard. DHG and PR25 are scorched into LP tokens, fused to the NFT's molten core for eternity.</p>
+      </div>
+      <div style="max-width:600px;margin:0 auto;">
+        <div style="background:#140a0a;border:1px solid #ef444412;border-radius:14px;padding:20px;margin-bottom:20px;">
+          <h3 style="color:#ef4444;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">The Rite of Dragonfire</h3>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#ef444422;color:#ef4444;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">I</div>
+            <div style="font-size:13px;color:#e8b0b0;">Your WETH is split between two flames</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#ef444422;color:#ef4444;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">II</div>
+            <div style="font-size:13px;color:#e8b0b0;">Half becomes <span style="color:#fca5a5;font-weight:600;">DHG</span> (Dragon's Hoard Gold), half becomes <span style="color:#fca5a5;font-weight:600;">PR25</span> (children's blessings)</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#ef444422;color:#ef4444;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">III</div>
+            <div style="font-size:13px;color:#e8b0b0;">Scorched into DHG/PR25 LP and fused to the NFT's molten core</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="background:#ef444422;color:#ef4444;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;">&#128293;</div>
+            <div style="font-size:13px;color:#fca5a5;font-weight:600;">Sealed forever &mdash; the hoard grows, children are blessed</div>
+          </div>
+        </div>
+        <div style="background:#140a0a;border:1px solid #ef444412;border-radius:14px;padding:20px;margin-bottom:20px;">
+          <h3 style="color:#ef4444;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">Tokens of the Nest</h3>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #ef44440d;font-size:13px;">
+            <span style="color:#fca5a5;font-weight:600;">DHG</span><span style="color:#e8b0b0;">Dragon's Hoard Gold &mdash; CON for your heroes</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;">
+            <span style="color:#fca5a5;font-weight:600;">PR25</span><span style="color:#e8b0b0;">Each token = 1 child blessed through education programs</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Durgan Dynasty Power Up -->
+    <div id="pu-durgan" style="display:none;">
+      <div class="hero">
+        <h2 style="font-family:Georgia,serif;letter-spacing:1px;">The <span>Durgan Dynasty</span></h2>
+        <p>Channel your WETH through the ancient halls of the Durgan Dynasty. DDD and PR25 are forged into LP tokens, bound to the NFT's dynastic seal for all time.</p>
+      </div>
+      <div style="max-width:600px;margin:0 auto;">
+        <div style="background:#0c0c18;border:1px solid #818cf812;border-radius:14px;padding:20px;margin-bottom:20px;">
+          <h3 style="color:#818cf8;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">The Dynastic Rite</h3>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#818cf822;color:#818cf8;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">I</div>
+            <div style="font-size:13px;color:#b0b0e8;">Your WETH is split between two pillars</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#818cf822;color:#818cf8;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">II</div>
+            <div style="font-size:13px;color:#b0b0e8;">Half becomes <span style="color:#a5b4fc;font-weight:600;">DDD</span> (Durgan Dynasty Drachma), half becomes <span style="color:#a5b4fc;font-weight:600;">PR25</span> (children's blessings)</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#818cf822;color:#818cf8;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">III</div>
+            <div style="font-size:13px;color:#b0b0e8;">Forged into DDD/PR25 LP and sealed within the NFT's dynastic vault</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="background:#818cf822;color:#818cf8;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;">&#9878;</div>
+            <div style="font-size:13px;color:#a5b4fc;font-weight:600;">Sealed forever &mdash; the dynasty endures, children are blessed</div>
+          </div>
+        </div>
+        <div style="background:#0c0c18;border:1px solid #818cf812;border-radius:14px;padding:20px;margin-bottom:20px;">
+          <h3 style="color:#818cf8;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">Tokens of the Dynasty</h3>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #818cf80d;font-size:13px;">
+            <span style="color:#a5b4fc;font-weight:600;">DDD</span><span style="color:#b0b0e8;">Durgan Dynasty Drachma &mdash; CHA + INT + DEX for your heroes</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;">
+            <span style="color:#a5b4fc;font-weight:600;">PR25</span><span style="color:#b0b0e8;">Each token = 1 child blessed through education programs</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pirate Power Up -->
+    <div id="pu-pirate" style="display:none;">
+      <div class="hero">
+        <h2 style="font-family:Georgia,serif;letter-spacing:1px;">The <span>Pirate's Cove</span></h2>
+        <p>Plunder your WETH into the depths. PKT and PR25 are lashed together into LP tokens, chained to the NFT's hull for all voyages to come.</p>
+      </div>
+      <div style="max-width:600px;margin:0 auto;">
+        <div style="background:#0a1218;border:1px solid #22d3ee12;border-radius:14px;padding:20px;margin-bottom:20px;">
+          <h3 style="color:#22d3ee;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">The Pirate's Bargain</h3>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#22d3ee22;color:#22d3ee;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">I</div>
+            <div style="font-size:13px;color:#b0d8e8;">Your WETH is split between two treasure chests</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#22d3ee22;color:#22d3ee;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">II</div>
+            <div style="font-size:13px;color:#b0d8e8;">Half becomes <span style="color:#67e8f9;font-weight:600;">PKT</span> (Pirate King's Tribute), half becomes <span style="color:#67e8f9;font-weight:600;">PR25</span> (children's blessings)</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#22d3ee22;color:#22d3ee;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">III</div>
+            <div style="font-size:13px;color:#b0d8e8;">Lashed into PKT/PR25 LP and chained to the NFT's hull</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="background:#22d3ee22;color:#22d3ee;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;">&#9875;</div>
+            <div style="font-size:13px;color:#67e8f9;font-weight:600;">Sealed forever &mdash; the plunder grows, children are blessed</div>
+          </div>
+        </div>
+        <div style="background:#0a1218;border:1px solid #22d3ee12;border-radius:14px;padding:20px;margin-bottom:20px;">
+          <h3 style="color:#22d3ee;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">Tokens of the Cove</h3>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #22d3ee0d;font-size:13px;">
+            <span style="color:#67e8f9;font-weight:600;">PKT</span><span style="color:#b0d8e8;">Pirate King's Tribute &mdash; DEX + WIS + CON for your heroes</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;">
+            <span style="color:#67e8f9;font-weight:600;">PR25</span><span style="color:#b0d8e8;">Each token = 1 child blessed through education programs</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ork Power Up -->
+    <div id="pu-ork" style="display:none;">
+      <div class="hero">
+        <h2 style="font-family:Georgia,serif;letter-spacing:1px;">The <span>Ork Warcamp</span></h2>
+        <p>Smash your WETH on the anvil of war. OGC and PR25 are beaten into LP tokens, riveted to the NFT's war banner until the end of days.</p>
+      </div>
+      <div style="max-width:600px;margin:0 auto;">
+        <div style="background:#180a0a;border:1px solid #dc262612;border-radius:14px;padding:20px;margin-bottom:20px;">
+          <h3 style="color:#dc2626;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">The Warchief's Demand</h3>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#dc262622;color:#dc2626;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">I</div>
+            <div style="font-size:13px;color:#e8b0b0;">Your WETH is split between two war chests</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#dc262622;color:#dc2626;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">II</div>
+            <div style="font-size:13px;color:#e8b0b0;">Half becomes <span style="color:#f87171;font-weight:600;">OGC</span> (Ork Gold Coin), half becomes <span style="color:#f87171;font-weight:600;">PR25</span> (children's blessings)</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#dc262622;color:#dc2626;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">III</div>
+            <div style="font-size:13px;color:#e8b0b0;">Beaten into OGC/PR25 LP and riveted to the NFT's war banner</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="background:#dc262622;color:#dc2626;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;">&#9876;</div>
+            <div style="font-size:13px;color:#f87171;font-weight:600;">Sealed forever &mdash; the horde grows, children are blessed</div>
+          </div>
+        </div>
+        <div style="background:#180a0a;border:1px solid #dc262612;border-radius:14px;padding:20px;margin-bottom:20px;">
+          <h3 style="color:#dc2626;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">Tokens of the Warcamp</h3>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #dc26260d;font-size:13px;">
+            <span style="color:#f87171;font-weight:600;">OGC</span><span style="color:#e8b0b0;">Ork Gold Coin &mdash; STR + DEX + CON for your heroes</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;">
+            <span style="color:#f87171;font-weight:600;">PR25</span><span style="color:#e8b0b0;">Each token = 1 child blessed through education programs</span>
           </div>
         </div>
       </div>
@@ -426,16 +694,12 @@
       <div id="puFormBox" style="background:#13100f;border:1px solid #c9a84c12;border-radius:14px;padding:20px;margin-bottom:20px;">
         <h3 id="puFormTitle" style="color:#c9a84c;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">Make Your Offering</h3>
         <div class="field">
-          <label>Select NFT Collection</label>
-          <select id="puNft" style="width:100%;background:#0a0608;color:#f0d070;border:1px solid #c9a84c22;padding:10px 12px;font-size:14px;border-radius:8px;font-family:monospace;outline:none;">
-            <option value="">-- Pick a collection --</option>
-          </select>
-          <div class="hint">LP tokens land at this address on Polygon (works for Base & Polygon NFTs)</div>
-        </div>
-        <div class="field">
-          <label>Or paste any NFT contract address</label>
-          <input id="puCustom" type="text" placeholder="0x..." />
-          <div class="hint">Use this for NFTs not in the dropdown</div>
+          <label>Select Your NFT</label>
+          <div id="puNftGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;max-height:280px;overflow-y:auto;padding:4px;"></div>
+          <div id="puNftNone" style="text-align:center;color:#776a50;font-size:13px;padding:16px;">Connect wallet to see your NFTs</div>
+          <div id="puNftLoading" style="display:none;text-align:center;color:#776a50;font-size:13px;padding:16px;">Scanning wallet...</div>
+          <input type="hidden" id="puNft" value="" />
+          <div id="puSelectedLabel" style="text-align:center;font-size:12px;color:#c9a84c;margin-top:6px;"></div>
         </div>
         <div class="field">
           <label>WETH Amount</label>
@@ -1608,7 +1872,7 @@ async function doBuy(id,chain){
     }
     toast("Purchase complete!","ok");closeBuy();loadBrowse();
     var nb=await new ethers.Contract(AZOS,E20,rpc).balanceOf(me);$("bal").innerText=fmt(nb)+" AZOS";
-    walletLoaded=false;ownedLoaded=false;
+    walletLoaded=false;ownedLoaded=false;puGridDone=false;
   }catch(e){toast("Buy failed: "+(e.reason||e.shortMessage||e.message),"err");b.disabled=false;b.innerText="Buy"}
 }
 
@@ -1688,7 +1952,7 @@ async function doSell(){
     $("st2").className="step done";$("st3").className="step done";
 
     toast("Listed successfully!","ok");
-    walletLoaded=false;ownedLoaded=false;
+    walletLoaded=false;ownedLoaded=false;puGridDone=false;
     setTimeout(function(){closeSell();tab("browse");loadBrowse()},800);
   }catch(e){
     toast("List failed: "+(e.reason||e.shortMessage||e.message),"err");
@@ -1765,26 +2029,81 @@ function toast(msg,type){var t=$("toast");t.innerText=msg;t.className="t-"+(type
 var currentNation="igypt";
 var NATIONS={
   igypt:{ powerUp:"0x047590925f939cc8d05Aaf42aA1699814ea35691", tokenA:"IGS", tokenB:"PR25", label:"Bazaar of Igypt", accent:"#c9a84c", formBg:"#13100f", formBorder:"#c9a84c12" },
-  elven:{ powerUp:"", tokenA:"EGP", tokenB:"JCGWR", label:"Elven Groves", accent:"#4ade80", formBg:"#0a120c", formBorder:"#4ade8012" }
+  elven:{ powerUp:"0x46F927621202A40B50916d046eE68544C5f7068b", tokenA:"EGP", tokenB:"PR25", label:"Elven Emporium", accent:"#a78bfa", formBg:"#0e0a14", formBorder:"#a78bfa12",
+    pairs:[
+      { addr:"0x46F927621202A40B50916d046eE68544C5f7068b", label:"EGP / PR25", desc:"INT + INT (children blessed)" },
+      { addr:"", label:"EGP / JCGWR (coming soon)", desc:"INT+WIS+DEX + STR (trees planted)" }
+    ]
+  },
+  frontier:{ powerUp:"0xED34B1764Bbdd48821c27852A4D4f87781837796", tokenA:"BTN", tokenB:"PR25", label:"Magic Grove", accent:"#4ade80", formBg:"#0a120c", formBorder:"#4ade8012" },
+  dwarven:{ powerUp:"0x4c6926eE0781a5af27E77f8eC8911f93373600AA", tokenA:"LGP", tokenB:"PR25", label:"Dwarven Fortress", accent:"#d97706", formBg:"#14100a", formBorder:"#d9770612" },
+  dragon:{ powerUp:"0x1A9F822923A8Db6FB99c238F20eDF1ddADA10300", tokenA:"DHG", tokenB:"PR25", label:"Dragon's Nest", accent:"#ef4444", formBg:"#140a0a", formBorder:"#ef444412" },
+  durgan:{ powerUp:"0xDbCFe64403114F532d738B2Ac1645545900D659b", tokenA:"DDD", tokenB:"PR25", label:"Durgan Dynasty", accent:"#818cf8", formBg:"#0c0c18", formBorder:"#818cf812" },
+  pirate:{ powerUp:"0xDD6BB031CA70f6C6A72952B8F2EDF1B75C6DD4E0", tokenA:"PKT", tokenB:"PR25", label:"Pirate's Cove", accent:"#22d3ee", formBg:"#0a1218", formBorder:"#22d3ee12" },
+  ork:{ powerUp:"0x1AF088aEB78f3c54d6462Dd77D60F881d25b7610", tokenA:"OGC", tokenB:"PR25", label:"Ork Warcamp", accent:"#dc2626", formBg:"#180a0a", formBorder:"#dc262612" }
 };
 
 function switchNation(id){
   currentNation=id;
   document.querySelectorAll(".nation-btn").forEach(function(b){b.classList.remove("active")});
   document.querySelectorAll(".nation-btn."+id).forEach(function(b){b.classList.add("active")});
+  // Show/hide igypt-only tabs (Browse, My NFTs, My Listings)
+  document.querySelectorAll("[data-igypt-only]").forEach(function(b){b.style.display=id==="igypt"?"":"none"});
+  // If on a hidden tab, switch to catalog or powerup
+  var curTab=document.querySelector(".page.on");
+  if(curTab&&id!=="igypt"){
+    var curId=curTab.id.replace("p-","");
+    if(curId==="browse"||curId==="wallet"||curId==="listings")tab("powerup");
+  }
   // Theme body
-  document.body.className=id==="elven"?"theme-elven":"";
+  document.body.className=id==="elven"?"theme-elven":id==="frontier"?"theme-grove":id==="dwarven"?"theme-dwarven":id==="dragon"?"theme-dragon":"";
   // Toggle power-up content
   $("pu-igypt").style.display=id==="igypt"?"block":"none";
   $("pu-elven").style.display=id==="elven"?"block":"none";
+  $("pu-frontier").style.display=id==="frontier"?"block":"none";
+  $("pu-dwarven").style.display=id==="dwarven"?"block":"none";
+  $("pu-dragon").style.display=id==="dragon"?"block":"none";
   // Style the form box
   var n=NATIONS[id];
   $("puFormBox").style.background=n.formBg;
   $("puFormBox").style.borderColor=n.formBorder;
   $("puFormTitle").style.color=n.accent;
-  $("puFormTitle").textContent=id==="igypt"?"Make Your Offering":"Channel the Roots";
+  $("puFormTitle").textContent=id==="igypt"?"Make Your Offering":id==="frontier"?"Tend the Grove":id==="dwarven"?"Work the Forge":id==="dragon"?"Feed the Hoard":"Channel the Roots";
+  // Populate pair selector if nation has pairs
+  if(n.pairs){
+    var sel=$("puPairSelect");
+    sel.innerHTML="";
+    for(var i=0;i<n.pairs.length;i++){
+      var opt=document.createElement("option");
+      opt.value=i;
+      opt.textContent=n.pairs[i].label;
+      sel.appendChild(opt);
+    }
+    onPairChange();
+  }
   // Update status
-  if(!n.powerUp){$("puStatus").textContent="Contract not yet deployed — deploy via deploy-powerup-elven.html";$("puStatus").style.color="#ef4444";}
+  var pu=getActivePowerUp();
+  if(!pu){$("puStatus").textContent="Contract not yet deployed for this pair";$("puStatus").style.color="#ef4444";}
+  else{$("puStatus").textContent="";}
+}
+
+function getActivePowerUp(){
+  var n=NATIONS[currentNation];
+  if(n.pairs){
+    var sel=$("puPairSelect");
+    if(sel&&sel.value!=="") return n.pairs[sel.selectedIndex].addr;
+  }
+  return n.powerUp;
+}
+
+function onPairChange(){
+  var n=NATIONS[currentNation];
+  if(!n.pairs)return;
+  var sel=$("puPairSelect");
+  var pair=n.pairs[sel.selectedIndex];
+  $("puPairDesc").textContent=pair.desc||"";
+  var pu=pair.addr;
+  if(!pu){$("puStatus").textContent="Contract not yet deployed for this pair";$("puStatus").style.color="#ef4444";}
   else{$("puStatus").textContent="";}
 }
 
@@ -1793,22 +2112,61 @@ var POWERUP_ABI = [
   "function powerUp(address nftContract, uint256 wethAmount) external",
   "event PoweredUp(address indexed user, address indexed nftContract, uint256 wethSpent, uint256 lpCreated)"
 ];
-var puDropdownDone=false;
+var puGridDone=false;
 
-function populatePuDropdown(){
-  if(puDropdownDone||!knownNfts.length)return;
-  var sel=$("puNft");
-  for(var i=0;i<knownNfts.length;i++){
-    var n=knownNfts[i];
-    var opt=document.createElement("option");
-    opt.value=n.contract_address;
-    opt.textContent=n.name+" ("+n.chain+") — "+n.contract_address.slice(0,8)+"...";
-    sel.appendChild(opt);
+async function populatePuDropdown(){
+  if(puGridDone)return;
+  var grid=$("puNftGrid");
+  var none=$("puNftNone");
+  var loading=$("puNftLoading");
+  if(!me){none.style.display="block";none.textContent="Connect wallet to see your NFTs";return}
+  // Scan wallet if not done
+  if(!walletLoaded){
+    none.style.display="none";loading.style.display="block";
+    await loadWallet();
+    loading.style.display="none";
   }
-  puDropdownDone=true;
-  // Update USD hint on amount change
+  grid.innerHTML="";
+  // Build cards from ownedMap
+  var count=0;
+  for(var addr in ownedMap){
+    for(var tid in ownedMap[addr]){
+      if(ownedMap[addr][tid]<=0)continue;
+      count++;
+      var nftEntry=null;
+      for(var ki=0;ki<knownNfts.length;ki++){
+        if(knownNfts[ki].contract_address.toLowerCase()===addr.toLowerCase()){nftEntry=knownNfts[ki];break}
+      }
+      var card=document.createElement("div");
+      card.className="pu-nft-card";
+      card.dataset.addr=addr;
+      card.dataset.tid=tid;
+      card.dataset.name=(nftEntry?nftEntry.name:"NFT")+" #"+tid;
+      card.innerHTML='<div class="pu-card-check">&#10003;</div><img src="'+PH+'"/><div class="pu-card-name">'+(nftEntry?esc(nftEntry.name):"NFT")+" #"+tid+'</div>';
+      card.onclick=(function(c){return function(){selectPuNft(c)}})(card);
+      grid.appendChild(card);
+      // Load image async
+      (function(c,a,t,ch){
+        getMetaChain(a,Number(t),ch||"polygon").then(function(m){
+          if(m&&m.image)c.querySelector("img").src=m.image;
+          if(m&&m.name)c.querySelector(".pu-card-name").textContent=m.name;
+          c.dataset.name=m&&m.name?m.name:c.dataset.name;
+        }).catch(function(){});
+      })(card,addr,tid,nftEntry?nftEntry.chain:"polygon");
+    }
+  }
+  if(count===0){none.style.display="block";none.textContent="No NFTs found in your wallet";}
+  else{none.style.display="none";}
+  puGridDone=true;
   $("puAmt").addEventListener("input",updatePuUsd);
   updatePuUsd();
+}
+
+function selectPuNft(card){
+  document.querySelectorAll(".pu-nft-card.selected").forEach(function(c){c.classList.remove("selected")});
+  card.classList.add("selected");
+  $("puNft").value=card.dataset.addr;
+  $("puSelectedLabel").textContent=card.dataset.name;
 }
 
 function updatePuUsd(){
@@ -1818,25 +2176,23 @@ function updatePuUsd(){
 }
 
 function getPuTarget(){
-  var custom=$("puCustom").value.trim();
-  if(custom)return custom;
   return $("puNft").value;
 }
 
 async function puApprove(){
   var st=$("puStatus");
   try{
-    if(!NATIONS[currentNation].powerUp){st.textContent="Contract not yet deployed for this nation";st.style.color="#ef4444";return}
+    var activePu=getActivePowerUp();if(!activePu){st.textContent="Contract not yet deployed for this pair";st.style.color="#ef4444";return}
     if(!me){showConnectModal();return}
     var target=getPuTarget();
-    if(!target){st.textContent="Pick a collection or paste an address";return}
+    if(!target){st.textContent="Select an NFT above first";return}
     var amt=$("puAmt").value.trim();
     var wei=ethers.parseEther(amt);
     await ensureChain("polygon");
     st.textContent="Approving "+amt+" WETH for PowerUp contract...";
     st.style.color="#c9a84c";
     var weth=new ethers.Contract(WETH_POLY,E20,signer);
-    var tx=await weth.approve(NATIONS[currentNation].powerUp,wei);
+    var tx=await weth.approve(activePu,wei);
     st.textContent="Waiting for approval...";
     await tx.wait();
     st.textContent="WETH approved! Click Power Up.";
@@ -1851,16 +2207,16 @@ async function puApprove(){
 async function puExecute(){
   var st=$("puStatus");
   try{
-    if(!NATIONS[currentNation].powerUp){st.textContent="Contract not yet deployed for this nation";st.style.color="#ef4444";return}
+    var activePu=getActivePowerUp();if(!activePu){st.textContent="Contract not yet deployed for this pair";st.style.color="#ef4444";return}
     if(!me){showConnectModal();return}
     var target=getPuTarget();
-    if(!target){st.textContent="Pick a collection or paste an address";return}
+    if(!target){st.textContent="Select an NFT above first";return}
     var amt=$("puAmt").value.trim();
     var wei=ethers.parseEther(amt);
     await ensureChain("polygon");
     st.textContent="Powering up "+target.slice(0,10)+"... with "+amt+" WETH";
     st.style.color="#c9a84c";
-    var c=new ethers.Contract(NATIONS[currentNation].powerUp,POWERUP_ABI,signer);
+    var c=new ethers.Contract(activePu,POWERUP_ABI,signer);
     var tx=await c.powerUp(target,wei);
     st.textContent="Waiting for confirmation...";
     var receipt=await tx.wait();
