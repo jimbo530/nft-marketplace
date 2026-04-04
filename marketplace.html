@@ -257,7 +257,7 @@
   <div class="page on" id="p-browse">
     <div class="hero">
       <h2>Collect <span>Impact NFTs</span></h2>
-      <p>80% of every sale creates LP tokens &mdash; 50% locked in the NFT forever, 30% to community power-ups. Zero platform fees.</p>
+      <p>Every sale creates LP tokens &mdash; 80% on primary sales, 40% on resales. LP is locked in NFTs forever or funds community power-ups. Zero platform fees.</p>
       <div class="hero-stats">
         <div class="hero-stat"><div class="num" id="statTotal">-</div><div class="label">Collections</div></div>
         <div class="hero-stat"><div class="num" id="statListed">-</div><div class="label">Listed</div></div>
@@ -397,11 +397,19 @@
       <div class="detail"><span class="lbl">Artist</span><span class="val" id="bArtist"></span></div>
       <div class="detail"><span class="lbl">LP Value Inside</span><span class="val" id="bLpValue" style="color:#60a5fa;font-weight:700;"></span></div>
       <div class="big-price" id="bPrice"></div>
-      <div class="fee-breakdown">
-        <div style="text-align:center;padding:4px 0 8px;margin-bottom:6px;border-bottom:1px solid #22c55e22;font-size:13px;font-weight:700;color:#22c55e;">80% of every sale creates LP tokens</div>
-        <div class="fee-row"><span class="fee-label">LP locked in NFT (permanent stat boost)</span><span class="fee-val" id="feeNft">50%</span></div>
-        <div class="fee-row"><span class="fee-label">LP to community power-ups</span><span class="fee-val" id="feeCom">30%</span></div>
-        <div class="fee-row"><span class="fee-label">Artist royalty</span><span class="fee-val" id="feeArtist">20%</span></div>
+      <div class="fee-breakdown" id="feePrimary">
+        <div style="text-align:center;padding:4px 0 8px;margin-bottom:6px;border-bottom:1px solid #22c55e22;font-size:13px;font-weight:700;color:#22c55e;">80% creates LP tokens</div>
+        <div class="fee-row"><span class="fee-label">LP locked in NFT (permanent stat boost)</span><span class="fee-val">50%</span></div>
+        <div class="fee-row"><span class="fee-label">LP to community power-ups</span><span class="fee-val">30%</span></div>
+        <div class="fee-row"><span class="fee-label">Artist royalty</span><span class="fee-val">20%</span></div>
+        <div class="fee-row fee-total"><span class="fee-label">Platform fee</span><span class="fee-val">None</span></div>
+      </div>
+      <div class="fee-breakdown" id="feeResale" style="display:none;">
+        <div style="text-align:center;padding:4px 0 8px;margin-bottom:6px;border-bottom:1px solid #22c55e22;font-size:13px;font-weight:700;color:#22c55e;">40% creates LP tokens</div>
+        <div class="fee-row"><span class="fee-label">To seller</span><span class="fee-val">50%</span></div>
+        <div class="fee-row"><span class="fee-label">LP locked in NFT (permanent stat boost)</span><span class="fee-val">25%</span></div>
+        <div class="fee-row"><span class="fee-label">LP to community power-ups</span><span class="fee-val">15%</span></div>
+        <div class="fee-row"><span class="fee-label">Artist royalty</span><span class="fee-val">10%</span></div>
         <div class="fee-row fee-total"><span class="fee-label">Platform fee</span><span class="fee-val">None</span></div>
       </div>
       <div id="bSharedNote" style="text-align:center;padding:8px 12px;margin-bottom:12px;font-size:11px;color:#c9a84c99;background:#c9a84c08;border-radius:8px;">NFTs in the same collection share LP — every sale powers up the whole collection</div>
@@ -433,10 +441,11 @@
       </div>
       <div class="field"><label>Artist Wallet</label><input id="sArtist" placeholder="0x... creator address" /><div class="hint">Receives 20% royalty on every sale</div></div>
       <div class="fee-split">
-        <div style="text-align:center;padding:2px 0 6px;margin-bottom:4px;border-bottom:1px solid #22c55e22;font-size:12px;font-weight:700;color:#22c55e;">80% of every sale creates LP tokens</div>
-        <div><span>LP locked in NFT (permanent stat boost)</span><span class="pct">50%</span></div>
-        <div><span>LP to community power-ups</span><span class="pct">30%</span></div>
-        <div><span>Artist royalty</span><span class="pct">20%</span></div>
+        <div style="text-align:center;padding:2px 0 6px;margin-bottom:4px;border-bottom:1px solid #22c55e22;font-size:12px;font-weight:700;color:#22c55e;">40% creates LP tokens</div>
+        <div><span>To you (seller)</span><span class="pct">50%</span></div>
+        <div><span>LP locked in NFT (permanent stat boost)</span><span class="pct">25%</span></div>
+        <div><span>LP to community power-ups</span><span class="pct">15%</span></div>
+        <div><span>Artist royalty</span><span class="pct">10%</span></div>
         <div style="border-top:1px solid #c9a84c15;margin-top:4px;padding-top:4px;"><span>Platform fee</span><span class="pct" style="color:#22c55e;">None</span></div>
       </div>
       <button class="btn btn-green" id="sSub" onclick="doSell()" style="width:100%;padding:14px;font-size:15px;">List for Sale</button>
@@ -1464,17 +1473,11 @@ function openBuy(li,entry){
     $("bPrice").innerHTML=fmt(li.price)+' <small>'+tok+'</small>';
   }
   $("bLpValue").innerText=entry&&entry.lpUsd&&entry.lpUsd!=="0.00"?fmtUsd(entry.lpUsd):"\u2014";
-  var p=effectiveP;
-  if(ch==="polygon"){
-    var d=4;
-    $("feeNft").innerText=(p*0.5).toFixed(d)+" WETH";
-    $("feeArtist").innerText=(p*0.2).toFixed(d)+" WETH";
-    $("feeCom").innerText=(p*0.3).toFixed(d)+" WETH";
-  } else {
-    $("feeNft").innerText=fmtUsd((p*0.5).toFixed(2));
-    $("feeArtist").innerText=fmtUsd((p*0.2).toFixed(2));
-    $("feeCom").innerText=fmtUsd((p*0.3).toFixed(2));
-  }
+  // Show primary vs resale fee breakdown
+  // Primary = seller is contract owner, resale = anyone else
+  var isResale=li.seller&&li.seller.toLowerCase()!==DEFAULT_ARTIST.toLowerCase();
+  $("feePrimary").style.display=isResale?"none":"block";
+  $("feeResale").style.display=isResale?"block":"none";
   var isSolo=SINGLE_TOKEN.indexOf(li.nft.toLowerCase())!==-1;
   $("bSharedNote").style.display=isSolo?"none":"block";
   var isMe=me&&li.seller.toLowerCase()===me.toLowerCase();
@@ -1498,7 +1501,7 @@ function openPreview(entry){
   $("bArtist").innerText="\u2014";
   $("bLpValue").innerText=entry.lpUsd&&entry.lpUsd!=="0.00"?fmtUsd(entry.lpUsd):"\u2014";
   $("bPrice").innerHTML='<span style="color:#554d40;font-size:16px;">Not listed for sale</span>';
-  $("feeNft").innerText="\u2014";$("feeArtist").innerText="\u2014";$("feeCom").innerText="\u2014";
+  $("feePrimary").style.display="block";$("feeResale").style.display="none";
   var isSolo=SINGLE_TOKEN.indexOf(entry.addr.toLowerCase())!==-1;
   $("bSharedNote").style.display=isSolo?"none":"block";
   var chainNote="This NFT is not currently listed for sale.";
