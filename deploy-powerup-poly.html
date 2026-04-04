@@ -1,0 +1,165 @@
+<!DOCTYPE html><html><head><title>Deploy PowerUp (Polygon)</title><script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script></head>
+<body style="background:#0a0608;color:#e8d5b0;font-family:Georgia;padding:30px;text-align:center;max-width:900px;margin:0 auto;">
+<h1 style="color:#a78bfa;">Power-Up Contract <span style="color:#776a50;font-size:16px;">Polygon</span></h1>
+<p>WETH &rarr; IGS + PR25 &rarr; IGS/PR25 LP &rarr; sent to NFT contract address</p>
+<p style="color:#888;font-size:13px;">No owner, no fees. LP goes directly to the NFT contract to boost backing.</p>
+
+<div style="margin:20px 0;">
+  <button onclick="deploy()" id="btnDeploy" style="background:#a78bfa;color:#0a0608;border:none;padding:14px 30px;font-size:15px;font-weight:bold;border-radius:8px;cursor:pointer;">Deploy on Polygon</button>
+</div>
+
+<div style="margin:20px 0;text-align:left;max-width:600px;margin:20px auto;">
+  <label style="color:#a78bfa;">Or reconnect to existing contract:</label><br>
+  <input id="existingAddr" type="text" placeholder="0x..." style="background:#1a1418;color:#c4b5fd;border:1px solid #a78bfa44;padding:10px;font-size:13px;width:100%;margin:5px 0 10px;font-family:monospace;box-sizing:border-box;" />
+  <button onclick="reconnect()" style="background:#4ade80;color:#0a0608;border:none;padding:10px 20px;font-size:14px;font-weight:bold;border-radius:8px;cursor:pointer;">Reconnect</button>
+</div>
+
+<p id="status" style="margin:20px;color:#4ade80;"></p>
+
+<div id="postDeploy" style="display:none;margin:30px auto;max-width:700px;">
+  <h2 style="color:#a78bfa;">PowerUp Deployed!</h2>
+  <p>Contract: <span id="contractAddr" style="color:#c4b5fd;font-family:monospace;"></span></p>
+  <hr style="border-color:#a78bfa44;">
+
+  <h3 style="color:#a78bfa;">Test: Power Up an NFT</h3>
+  <div style="text-align:left;">
+    <label style="color:#a78bfa;">NFT Contract Address (any chain &mdash; LP lands on Polygon at this address):</label><br>
+    <input id="nftAddr" type="text" placeholder="0x..." style="background:#1a1418;color:#c4b5fd;border:1px solid #a78bfa44;padding:8px;font-size:13px;width:100%;margin:5px 0 10px;font-family:monospace;box-sizing:border-box;" />
+    <label style="color:#a78bfa;">WETH Amount:</label><br>
+    <input id="wethAmount" type="text" value="0.001" style="background:#1a1418;color:#c4b5fd;border:1px solid #a78bfa44;padding:8px;font-size:13px;width:200px;margin:5px 0 10px;font-family:monospace;" />
+  </div>
+  <div style="margin:15px 0;">
+    <button onclick="approveWeth()" style="background:#a78bfa;color:#0a0608;border:none;padding:10px 20px;font-size:14px;font-weight:bold;border-radius:8px;cursor:pointer;">1. Approve WETH</button>
+    <button onclick="powerUp()" style="background:#4ade80;color:#0a0608;border:none;padding:10px 20px;font-size:14px;font-weight:bold;border-radius:8px;cursor:pointer;margin-left:10px;">2. Power Up!</button>
+  </div>
+</div>
+
+<div id="log" style="margin:20px 0;padding:15px;background:#1a1418;border:1px solid #a78bfa44;border-radius:8px;text-align:left;font-family:monospace;font-size:11px;max-height:400px;overflow-y:auto;display:none;"></div>
+
+<script>
+var WETH = "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619";
+
+var BYTECODE = "0x6080604052348015600e575f5ffd5b50610ae88061001c5f395ff3fe608060405234801561000f575f5ffd5b5060043610610055575f3560e01c8063675409a714610059578063737517f51461009057806398c91d90146100a5578063ad5c4648146100c0578063f887ea40146100db575b5f5ffd5b61007473e302672798d12e7f68c783db2c2d5e6b48ccf3ce81565b6040516001600160a01b03909116815260200160405180910390f35b6100a361009e366004610856565b6100f6565b005b6100747372e4327f592e9cb09d5730a55d1d68de144af53c81565b610074737ceb23fd6bc0add59e62ac25578270cff1b9f61981565b61007473edf6066a2b290c185783862c7f4776a2c8077ad181565b5f81116101375760405162461bcd60e51b815260206004820152600b60248201526a16995c9bc8185b5bdd5b9d60aa1b604482015260640160405180910390fd5b6040516323b872dd60e01b815233600482015230602482015260448101829052737ceb23fd6bc0add59e62ac25578270cff1b9f619906323b872dd906064016020604051808303815f875af1158015610192573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906101b6919061088b565b505f6101c36002836108c5565b90506101e373e302672798d12e7f68c783db2c2d5e6b48ccf3ce826102b9565b61020a7372e4327f592e9cb09d5730a55d1d68de144af53c61020583856108e4565b6102b9565b5f6102148461046c565b9050610233737ceb23fd6bc0add59e62ac25578270cff1b9f619610772565b61025073e302672798d12e7f68c783db2c2d5e6b48ccf3ce610772565b61026d7372e4327f592e9cb09d5730a55d1d68de144af53c610772565b60408051848152602081018390526001600160a01b0386169133917f8df438daab0ae002ffd33b478c9a6b7cf595d4440759744100838e0e2523986a910160405180910390a350505050565b60405163095ea7b360e01b815273edf6066a2b290c185783862c7f4776a2c8077ad1600482015260248101829052737ceb23fd6bc0add59e62ac25578270cff1b9f6199063095ea7b3906044016020604051808303815f875af1158015610322573d5f5f3e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610346919061088b565b506040805160028082526060820183525f92602083019080368337019050509050737ceb23fd6bc0add59e62ac25578270cff1b9f619815f8151811061038e5761038e610911565b60200260200101906001600160a01b031690816001600160a01b03168152505082816001815181106103c2576103c2610911565b6001600160a01b039092166020928302919091019091015273edf6066a2b290c185783862c7f4776a2c8077ad16338ed1739835f84306104044261012c610925565b6040518663ffffffff1660e01b8152600401610424959493929190610938565b5f604051808303815f875af115801561043f573d5f5f3e3d5ffd5b505050506040513d5f823e601f3d908101601f1916820160405261046691908101906109a8565b50505050565b6040516370a0823160e01b81523060048201525f90819073e302672798d12e7f68c783db2c2d5e6b48ccf3ce906370a0823190602401602060405180830381865afa1580156104bd573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906104e19190610a70565b6040516370a0823160e01b81523060048201529091505f907372e4327f592e9cb09d5730a55d1d68de144af53c906370a0823190602401602060405180830381865afa158015610533573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906105579190610a70565b60405163095ea7b360e01b815273edf6066a2b290c185783862c7f4776a2c8077ad160048201526024810184905290915073e302672798d12e7f68c783db2c2d5e6b48ccf3ce9063095ea7b3906044016020604051808303815f875af11580156105c3573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906105e7919061088b565b5060405163095ea7b360e01b815273edf6066a2b290c185783862c7f4776a2c8077ad16004820152602481018290527372e4327f592e9cb09d5730a55d1d68de144af53c9063095ea7b3906044016020604051808303815f875af1158015610651573d5f5f3e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610675919061088b565b5073edf6066a2b290c185783862c7f4776a2c8077ad163e8e3370073e302672798d12e7f68c783db2c2d5e6b48ccf3ce7372e4327f592e9cb09d5730a55d1d68de144af53c85855f808b6106cb4261012c610925565b60405160e08a901b6001600160e01b03191681526001600160a01b039889166004820152968816602488015260448701959095526064860193909352608485019190915260a484015290921660c482015260e4810191909152610104016060604051808303815f875af1158015610744573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906107689190610a87565b9695505050505050565b6040516370a0823160e01b81523060048201525f906001600160a01b038316906370a0823190602401602060405180830381865afa1580156107b6573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906107da9190610a70565b905080156108525760405163a9059cbb60e01b8152336004820152602481018290526001600160a01b0383169063a9059cbb906044016020604051808303815f875af115801561082c573d5f5f3e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610850919061088b565b505b5050565b5f5f60408385031215610867575f5ffd5b82356001600160a01b038116811461087d575f5ffd5b946020939093013593505050565b5f6020828403121561089b575f5ffd5b815180151581146108aa575f5ffd5b9392505050565b634e487b7160e01b5f52601160045260245ffd5b5f826108df57634e487b7160e01b5f52601260045260245ffd5b500490565b818103818111156108f7576108f76108b1565b92915050565b634e487b7160e01b5f52604160045260245ffd5b634e487b7160e01b5f52603260045260245ffd5b808201808211156108f7576108f76108b1565b5f60a0820187835286602084015260a0604084015280865180835260c0850191506020880192505f5b818110156109885783516001600160a01b0316835260209384019390920191600101610961565b50506001600160a01b039590951660608401525050608001529392505050565b5f602082840312156109b8575f5ffd5b815167ffffffffffffffff8111156109ce575f5ffd5b8201601f810184136109de575f5ffd5b805167ffffffffffffffff8111156109f8576109f86108fd565b8060051b604051601f19603f830116810181811067ffffffffffffffff82111715610a2557610a256108fd565b604052918252602081840181019290810187841115610a42575f5ffd5b6020850194505b83851015610a6557845180825260209586019590935001610a49565b509695505050505050565b5f60208284031215610a80575f5ffd5b5051919050565b5f5f5f60608486031215610a99575f5ffd5b505081516020830151604090930151909492935091905056fea26469706673582212206c30fb98ca6d560e6063a44421c8919837e125053238b7ada2acb9787494a50164736f6c63430008220033";
+
+var ABI = [{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":true,"internalType":"address","name":"nftContract","type":"address"},{"indexed":false,"internalType":"uint256","name":"wethSpent","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"lpCreated","type":"uint256"}],"name":"PoweredUp","type":"event"},{"inputs":[],"name":"IGS","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PR25","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"WETH","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"nftContract","type":"address"},{"internalType":"uint256","name":"wethAmount","type":"uint256"}],"name":"powerUp","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"router","outputs":[{"internalType":"contract IRouter","name":"","type":"address"}],"stateMutability":"view","type":"function"}];
+
+var ERC20_ABI = [
+  {"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"stateMutability":"view","type":"function"}
+];
+
+var contractAddr = null;
+var signer = null;
+
+function log(msg, color) {
+  var el = document.getElementById("log");
+  el.style.display = "block";
+  el.innerHTML += "<div style='margin:3px 0;color:" + (color || "#e8d5b0") + ";'>" + msg + "</div>";
+  el.scrollTop = el.scrollHeight;
+}
+
+async function getSigner() {
+  if (signer) return signer;
+  if (!window.ethereum) { throw new Error("No wallet found"); }
+  await window.ethereum.request({method:"eth_requestAccounts"});
+  try { await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x89"}]}); } catch(e) { log("Switch to Polygon (137) manually", "#ef4444"); }
+  var p = new ethers.BrowserProvider(window.ethereum);
+  signer = await p.getSigner();
+  log("Wallet: " + await signer.getAddress(), "#4ade80");
+  return signer;
+}
+
+async function reconnect() {
+  var addr = document.getElementById("existingAddr").value.trim();
+  if (!addr) { document.getElementById("status").innerText = "Enter contract address"; return; }
+  await getSigner();
+  contractAddr = addr;
+  document.getElementById("contractAddr").innerText = contractAddr;
+  document.getElementById("postDeploy").style.display = "block";
+  document.getElementById("status").innerHTML = "Reconnected to <span style='color:#c4b5fd;font-family:monospace;'>" + contractAddr + "</span>";
+  log("Reconnected to " + contractAddr, "#4ade80");
+}
+
+async function deploy() {
+  var s = document.getElementById("status");
+  var btn = document.getElementById("btnDeploy");
+  btn.disabled = true;
+  try {
+    s.innerText = "Connecting wallet...";
+    var sig = await getSigner();
+
+    s.innerText = "Deploying PowerUp on Polygon... confirm in wallet";
+    log("Deploying PowerUpPoly (no constructor args)");
+    var f = new ethers.ContractFactory(ABI, BYTECODE, sig);
+    var c = await f.deploy();
+    s.innerText = "Waiting for confirmation...";
+    await c.waitForDeployment();
+    contractAddr = await c.getAddress();
+    log("PowerUp deployed: " + contractAddr, "#4ade80");
+    s.innerHTML = "Deployed at <span style='color:#c4b5fd;font-family:monospace;'>" + contractAddr + "</span>";
+    document.getElementById("contractAddr").innerText = contractAddr;
+    document.getElementById("postDeploy").style.display = "block";
+  } catch(e) {
+    s.innerHTML = "Error: " + e.message;
+    log("Deploy error: " + e.message, "#ef4444");
+    btn.disabled = false;
+  }
+}
+
+async function approveWeth() {
+  var s = document.getElementById("status");
+  try {
+    var sig = await getSigner();
+    var amt = document.getElementById("wethAmount").value.trim();
+    var wei = ethers.parseEther(amt);
+    s.innerText = "Approving " + amt + " WETH for PowerUp contract...";
+    log("Approving " + amt + " WETH to " + contractAddr);
+    var weth = new ethers.Contract(WETH, ERC20_ABI, sig);
+    var tx = await weth.approve(contractAddr, wei);
+    s.innerText = "Waiting for approval confirmation...";
+    await tx.wait();
+    log("WETH approved!", "#4ade80");
+    s.innerText = "WETH approved! Now click Power Up.";
+  } catch(e) {
+    s.innerHTML = "Error: " + e.message;
+    log("Approve error: " + e.message, "#ef4444");
+  }
+}
+
+async function powerUp() {
+  var s = document.getElementById("status");
+  try {
+    var sig = await getSigner();
+    var nft = document.getElementById("nftAddr").value.trim();
+    var amt = document.getElementById("wethAmount").value.trim();
+    if (!nft) { s.innerText = "Enter NFT contract address"; return; }
+    var wei = ethers.parseEther(amt);
+    s.innerText = "Powering up " + nft + " with " + amt + " WETH...";
+    log("powerUp(" + nft + ", " + amt + " WETH)");
+    var c = new ethers.Contract(contractAddr, ABI, sig);
+    var tx = await c.powerUp(nft, wei);
+    s.innerText = "Waiting for confirmation...";
+    var receipt = await tx.wait();
+    log("Power-up tx confirmed: " + receipt.hash, "#4ade80");
+
+    // Parse PoweredUp event
+    var iface = new ethers.Interface(ABI);
+    for (var l of receipt.logs) {
+      try {
+        var parsed = iface.parseLog({topics: l.topics, data: l.data});
+        if (parsed && parsed.name === "PoweredUp") {
+          var lpAmt = ethers.formatEther(parsed.args.lpCreated);
+          log("LP created: " + lpAmt + " sent to " + parsed.args.nftContract, "#4ade80");
+          s.innerHTML = "Done! " + lpAmt + " LP sent to <span style='color:#c4b5fd;font-family:monospace;'>" + parsed.args.nftContract + "</span>";
+        }
+      } catch(e) {}
+    }
+  } catch(e) {
+    s.innerHTML = "Error: " + e.message;
+    log("PowerUp error: " + e.message, "#ef4444");
+  }
+}
+</script>
+</body></html>

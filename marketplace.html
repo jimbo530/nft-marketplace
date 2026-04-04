@@ -249,6 +249,7 @@
   <button onclick="tab('catalog')">All ToT NFTs</button>
   <button onclick="tab('wallet')">My NFTs</button>
   <button onclick="tab('listings')">My Listings</button>
+  <button onclick="tab('powerup')">Power Up</button>
 </nav>
 
 <main>
@@ -303,6 +304,75 @@
     <div class="loader" id="listLoad" style="display:none"><div class="spin"></div><br>Loading your listings...</div>
     <div id="listHead" style="display:none;" class="sec-head"><h3>Your Active Listings</h3><span class="count" id="listCount"></span></div>
     <div id="listRows"></div>
+  </div>
+
+  <!-- Power Up -->
+  <div class="page" id="p-powerup">
+    <div class="hero">
+      <h2>Power Up <span>Your NFTs</span></h2>
+      <p>Spend WETH to create IGS/PR25 LP tokens sent directly to any NFT contract, boosting its backing value and stats forever.</p>
+    </div>
+
+    <div style="max-width:600px;margin:0 auto;">
+      <!-- How it works -->
+      <div style="background:#13100f;border:1px solid #c9a84c12;border-radius:14px;padding:20px;margin-bottom:20px;">
+        <h3 style="color:#c9a84c;font-size:15px;margin-bottom:12px;">How It Works</h3>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <div style="background:#c9a84c22;color:#c9a84c;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">1</div>
+          <div style="font-size:13px;color:#e8d5b0;">Your WETH is split 50/50</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <div style="background:#c9a84c22;color:#c9a84c;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">2</div>
+          <div style="font-size:13px;color:#e8d5b0;">Half buys <span style="color:#22c55e;font-weight:600;">IGS</span> (impact game shares), half buys <span style="color:#22c55e;font-weight:600;">PR25</span> (kids helped)</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <div style="background:#c9a84c22;color:#c9a84c;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">3</div>
+          <div style="font-size:13px;color:#e8d5b0;">Combined into IGS/PR25 LP and sent to the NFT contract</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="background:#22c55e22;color:#22c55e;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">&#10003;</div>
+          <div style="font-size:13px;color:#22c55e;font-weight:600;">LP is locked forever &mdash; stats go up, kids get helped</div>
+        </div>
+      </div>
+
+      <!-- Token explainer -->
+      <div style="background:#13100f;border:1px solid #c9a84c12;border-radius:14px;padding:20px;margin-bottom:20px;">
+        <h3 style="color:#c9a84c;font-size:15px;margin-bottom:12px;">What These Tokens Do</h3>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #c9a84c0d;font-size:13px;">
+          <span style="color:#22c55e;font-weight:600;">IGS</span><span style="color:#e8d5b0;">Impact Game Shares &mdash; funds game development & community</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;">
+          <span style="color:#22c55e;font-weight:600;">PR25</span><span style="color:#e8d5b0;">Each token = 1 kid helped through education programs</span>
+        </div>
+      </div>
+
+      <!-- NFT selector + amount -->
+      <div style="background:#13100f;border:1px solid #c9a84c12;border-radius:14px;padding:20px;margin-bottom:20px;">
+        <h3 style="color:#c9a84c;font-size:15px;margin-bottom:12px;">Power Up</h3>
+        <div class="field">
+          <label>Select NFT Collection</label>
+          <select id="puNft" style="width:100%;background:#0a0608;color:#f0d070;border:1px solid #c9a84c22;padding:10px 12px;font-size:14px;border-radius:8px;font-family:monospace;outline:none;">
+            <option value="">-- Pick a collection --</option>
+          </select>
+          <div class="hint">LP tokens land at this address on Polygon (works for Base & Polygon NFTs)</div>
+        </div>
+        <div class="field">
+          <label>Or paste any NFT contract address</label>
+          <input id="puCustom" type="text" placeholder="0x..." />
+          <div class="hint">Use this for NFTs not in the dropdown</div>
+        </div>
+        <div class="field">
+          <label>WETH Amount</label>
+          <input id="puAmt" type="text" value="0.01" placeholder="0.01" />
+          <div class="hint" id="puUsd"></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button class="btn btn-gold" onclick="puApprove()" id="puBtnApprove" style="flex:1;padding:14px;">1. Approve WETH</button>
+          <button class="btn btn-green" onclick="puExecute()" id="puBtnGo" style="flex:1;padding:14px;">2. Power Up!</button>
+        </div>
+        <p id="puStatus" style="text-align:center;margin-top:12px;font-size:13px;color:#776a50;"></p>
+      </div>
+    </div>
   </div>
 </main>
 
@@ -388,6 +458,7 @@ var PH = "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%
 var MABI = [
   "function nextListingId() view returns (uint256)",
   "function listings(uint256) view returns (address seller,address nftContract,uint256 tokenId,uint256 amount,uint256 priceAzos,address artistWallet,bool active)",
+  "function totalCost(uint256) view returns (uint256)",
   "function list(address,uint256,uint256,uint256,address) returns (uint256)",
   "function buy(uint256)","function cancel(uint256)"
 ];
@@ -1014,12 +1085,13 @@ async function ensureChain(chain){
 
 // ── Tabs ──
 function tab(id) {
-  document.querySelectorAll("nav button").forEach((b,i)=>b.className=["browse","catalog","wallet","listings"][i]===id?"on":"");
+  document.querySelectorAll("nav button").forEach((b,i)=>b.className=["browse","catalog","wallet","listings","powerup"][i]===id?"on":"");
   document.querySelectorAll(".page").forEach(p=>p.className="page");
   $("p-"+id).className="page on";
   if(id==="catalog"&&!catalogLoaded)loadCatalog();
   if(id==="wallet"&&me)loadWallet();
   if(id==="listings"&&me)loadMyListings();
+  if(id==="powerup")populatePuDropdown();
 }
 
 // ── Browse — active listings only ──
@@ -1383,10 +1455,10 @@ async function doBuy(id,chain){
       b.innerText="Buying...";toast("Confirm purchase in wallet...","info");
       var mkt=new ethers.Contract(MKT_POLY,MABI_POLY,signer);var t2=await mkt.buy(id);await t2.wait();
     } else {
-      var it=items.find(x=>x.id===id&&x.chain==="base");
       var azos=new ethers.Contract(AZOS,E20,signer);
+      var tc=await new ethers.Contract(MKT,MABI,rpc).totalCost(id);
       var allow=await azos.allowance(me,MKT);
-      if(allow<it.price){b.innerText="Approving AZOS...";toast("Approve AZOS spend in wallet...","info");var t1=await azos.approve(MKT,it.price);await t1.wait()}
+      if(allow<tc){b.innerText="Approving AZOS...";toast("Approve AZOS spend in wallet...","info");var t1=await azos.approve(MKT,tc);await t1.wait()}
       b.innerText="Buying...";toast("Confirm purchase in wallet...","info");
       var mkt=new ethers.Contract(MKT,MABI,signer);var t2=await mkt.buy(id);await t2.wait();
     }
@@ -1545,8 +1617,113 @@ function fmtD(n){return n.toFixed(2)}
 function esc(s){var d=document.createElement("div");d.appendChild(document.createTextNode(s||""));return d.innerHTML}
 function toast(msg,type){var t=$("toast");t.innerText=msg;t.className="t-"+(type||"info")+" on";clearTimeout(t._t);t._t=setTimeout(function(){t.className=""},4000)}
 
+// ── Power Up ──
+var POWERUP_POLY = "0x047590925f939cc8d05Aaf42aA1699814ea35691";
+var POWERUP_ABI = [
+  "function powerUp(address nftContract, uint256 wethAmount) external",
+  "event PoweredUp(address indexed user, address indexed nftContract, uint256 wethSpent, uint256 lpCreated)"
+];
+var puDropdownDone=false;
+
+function populatePuDropdown(){
+  if(puDropdownDone||!knownNfts.length)return;
+  var sel=$("puNft");
+  for(var i=0;i<knownNfts.length;i++){
+    var n=knownNfts[i];
+    var opt=document.createElement("option");
+    opt.value=n.contract_address;
+    opt.textContent=n.name+" ("+n.chain+") — "+n.contract_address.slice(0,8)+"...";
+    sel.appendChild(opt);
+  }
+  puDropdownDone=true;
+  // Update USD hint on amount change
+  $("puAmt").addEventListener("input",updatePuUsd);
+  updatePuUsd();
+}
+
+function updatePuUsd(){
+  var amt=parseFloat($("puAmt").value)||0;
+  var usd=(amt*ethUsdPrice).toFixed(2);
+  $("puUsd").textContent=amt>0?"~$"+usd+" USD":"";
+}
+
+function getPuTarget(){
+  var custom=$("puCustom").value.trim();
+  if(custom)return custom;
+  return $("puNft").value;
+}
+
+async function puApprove(){
+  var st=$("puStatus");
+  try{
+    if(!me){await connect();if(!me)return}
+    var target=getPuTarget();
+    if(!target){st.textContent="Pick a collection or paste an address";return}
+    var amt=$("puAmt").value.trim();
+    var wei=ethers.parseEther(amt);
+    // Switch to Polygon
+    try{await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x89"}]})}catch(e){}
+    var p=new ethers.BrowserProvider(window.ethereum);
+    var sig=await p.getSigner();
+    st.textContent="Approving "+amt+" WETH for PowerUp contract...";
+    st.style.color="#c9a84c";
+    var weth=new ethers.Contract(WETH_POLY,E20,sig);
+    var tx=await weth.approve(POWERUP_POLY,wei);
+    st.textContent="Waiting for approval...";
+    await tx.wait();
+    st.textContent="WETH approved! Click Power Up.";
+    st.style.color="#22c55e";
+    toast("WETH approved!","ok");
+  }catch(e){
+    st.textContent="Error: "+e.message;
+    st.style.color="#dc2626";
+  }
+}
+
+async function puExecute(){
+  var st=$("puStatus");
+  try{
+    if(!me){await connect();if(!me)return}
+    var target=getPuTarget();
+    if(!target){st.textContent="Pick a collection or paste an address";return}
+    var amt=$("puAmt").value.trim();
+    var wei=ethers.parseEther(amt);
+    // Switch to Polygon
+    try{await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x89"}]})}catch(e){}
+    var p=new ethers.BrowserProvider(window.ethereum);
+    var sig=await p.getSigner();
+    st.textContent="Powering up "+target.slice(0,10)+"... with "+amt+" WETH";
+    st.style.color="#c9a84c";
+    var c=new ethers.Contract(POWERUP_POLY,POWERUP_ABI,sig);
+    var tx=await c.powerUp(target,wei);
+    st.textContent="Waiting for confirmation...";
+    var receipt=await tx.wait();
+    // Parse event
+    var iface=new ethers.Interface(POWERUP_ABI);
+    for(var l of receipt.logs){
+      try{
+        var parsed=iface.parseLog({topics:l.topics,data:l.data});
+        if(parsed&&parsed.name==="PoweredUp"){
+          var lp=ethers.formatEther(parsed.args[3]);
+          st.innerHTML="Done! <span style='color:#22c55e;font-weight:700;'>"+lp+" LP</span> sent to <span style='font-family:monospace;color:#c4b5fd;'>"+parsed.args[1].slice(0,10)+"...</span>";
+          st.style.color="#22c55e";
+          toast("Power-up complete! "+lp+" LP created","ok");
+          return;
+        }
+      }catch(e){}
+    }
+    st.textContent="Power-up confirmed! Tx: "+receipt.hash.slice(0,14)+"...";
+    st.style.color="#22c55e";
+    toast("Power-up confirmed!","ok");
+  }catch(e){
+    st.textContent="Error: "+e.message;
+    st.style.color="#dc2626";
+  }
+}
+
 // ── Init ──
 loadKnownNfts().then(function(){loadBrowse()});
+loadEthPrice();
 if(window.ethereum&&ethereum.selectedAddress)connect();
 </script>
 </body>
