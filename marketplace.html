@@ -562,12 +562,7 @@ async function loadBackingFromDb(){
       var k=rows[i].key.toLowerCase();
       var d=rows[i].data;
       if(k==="__summary__"){
-        if(d&&d.tokenBreakdown){
-          for(var ti=0;ti<d.tokenBreakdown.length;ti++){
-            var tb=d.tokenBreakdown[ti];
-            if(tb.symbol&&tb.usd>0)tokenUsdPrices[tb.symbol]=(tokenUsdPrices[tb.symbol]||0)+tb.usd;
-          }
-        }
+        if(d&&d.tokenUsdPrices)tokenUsdPrices=d.tokenUsdPrices;
         continue;
       }
       if(d&&typeof d.usdBacking==="number"&&d.usdBacking>0){
@@ -581,7 +576,7 @@ async function loadBackingFromDb(){
   }catch(e){console.warn("[MKT] DB backing fetch failed:",e);return false}
 }
 
-var tokenUsdPrices={}; // symbol -> global usd total (from nft_backing summary)
+var tokenUsdPrices={}; // address -> per-unit USD price (from nft_backing summary)
 
 // Tier 2: On-chain AZOS/MfT LP pair (fallback when DB empty)
 async function loadPairState(){
@@ -696,25 +691,14 @@ function buildCardBack(addr,lpUsd){
       }
       return h;
     }
-    // Compute per-token USD for game/traditional using total backing proportionally
-    var totalUsd=parseFloat(lpUsd||"0");
-    if(totalUsd>0){
-      // Sum all raw amounts weighted equally to get proportions
-      var totalRaw=0;
-      for(var ri=0;ri<tokens.length;ri++){
-        var sym=tokens[ri].symbol;
-        // Use global token breakdown prices if available for weighting
-        var w=tokenUsdPrices[sym]||1;
-        tokens[ri]._weight=tokens[ri].amount*w;
-        totalRaw+=tokens[ri]._weight;
-      }
-      if(totalRaw>0){
-        for(var ri2=0;ri2<tokens.length;ri2++){
-          tokens[ri2].usdValue=(tokens[ri2]._weight/totalRaw)*totalUsd;
-        }
-      }
+    // Compute actual per-token USD from per-unit prices
+    for(var ri=0;ri<tokens.length;ri++){
+      var t=tokens[ri];
+      var addr=(t.addr||"").toLowerCase();
+      var perUnit=addr?tokenUsdPrices[addr]||0:0;
+      t.usdValue=t.amount*perUnit;
     }
-    rows=renderGroup("Impact","#22c55e",impact,false)+renderGroup("Game","#c9a84c",game,true)+renderGroup("Traditional","#60a5fa",trad,true);
+    rows=renderGroup("Impact","#22c55e",impact,true)+renderGroup("Game","#c9a84c",game,true)+renderGroup("Traditional","#60a5fa",trad,true);
   } else {
     rows='<div style="text-align:center;color:#554d40;padding:20px;font-size:12px;">No token data yet</div>';
   }
