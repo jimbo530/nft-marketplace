@@ -164,6 +164,38 @@
   footer a { color:#776a50; }
   footer a:hover { color:#c9a84c; }
 
+  /* Nation bar */
+  .nation-bar { display:flex; justify-content:center; gap:0; background:#0f0a0dee; border-bottom:1px solid #c9a84c22; backdrop-filter:blur(8px); }
+  .nation-btn { background:none; border:none; padding:10px 28px; font-size:13px; font-weight:700; cursor:pointer; letter-spacing:1px; text-transform:uppercase; transition:all .2s; position:relative; }
+  .nation-btn::after { content:''; position:absolute; bottom:0; left:20%; right:20%; height:2px; border-radius:2px; transition:all .2s; }
+  /* Igypt theme */
+  .nation-btn.igypt { color:#776a50; }
+  .nation-btn.igypt:hover { color:#c9a84c; }
+  .nation-btn.igypt.active { color:#c9a84c; }
+  .nation-btn.igypt.active::after { background:#c9a84c; }
+  /* Elven theme */
+  .nation-btn.elven { color:#507760; }
+  .nation-btn.elven:hover { color:#4ade80; }
+  .nation-btn.elven.active { color:#4ade80; }
+  .nation-btn.elven.active::after { background:#4ade80; }
+
+  /* Elven theme overrides (applied to body) */
+  body.theme-elven { background:#040a06; }
+  body.theme-elven::before { background:radial-gradient(ellipse at 50% 0%,#0a1a0e 0%,#040a06 60%); }
+  body.theme-elven header { background:#060d08dd; border-bottom-color:#4ade8022; }
+  body.theme-elven .logo { color:#4ade80; }
+  body.theme-elven .logo-icon { background:linear-gradient(135deg,#4ade80,#166534); }
+  body.theme-elven nav { background:#060d08cc; border-bottom-color:#4ade8022; }
+  body.theme-elven nav button { color:#507760; }
+  body.theme-elven nav button:hover { color:#b0e8c0; }
+  body.theme-elven nav button.on { color:#4ade80; border-bottom-color:#4ade80; }
+  body.theme-elven .btn-gold { background:linear-gradient(135deg,#4ade80,#16a34a); }
+  body.theme-elven .btn-gold:hover { background:linear-gradient(135deg,#6ee7a0,#4ade80); box-shadow:0 4px 16px #4ade8033; }
+  body.theme-elven .hero h2 span { background:linear-gradient(90deg,#4ade80,#86efac); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  body.theme-elven .card { background:#0a120c; border-color:#4ade8012; }
+  body.theme-elven .card:hover { border-color:#4ade8044; }
+  body.theme-elven .nation-bar { background:#060d08ee; border-bottom-color:#4ade8022; }
+
   /* Filter bar */
   .filter-bar { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
   .filter-btn { background:#13100f; border:1px solid #c9a84c22; color:#776a50; padding:7px 16px; font-size:12px; font-weight:600; border-radius:20px; cursor:pointer; transition:all .15s; }
@@ -244,6 +276,11 @@
   </div>
 </header>
 
+<div class="nation-bar">
+  <button class="nation-btn igypt active" onclick="switchNation('igypt')">Bazaar of Igypt</button>
+  <button class="nation-btn elven" onclick="switchNation('elven')">Elven Groves</button>
+</div>
+
 <nav>
   <button class="on" onclick="tab('browse')">Browse</button>
   <button onclick="tab('catalog')">All ToT NFTs</button>
@@ -308,47 +345,86 @@
 
   <!-- Power Up -->
   <div class="page" id="p-powerup">
-    <div class="hero">
-      <h2>Power Up <span>Your NFTs</span></h2>
-      <p>Spend WETH to create IGS/PR25 LP tokens sent directly to any NFT contract, boosting its backing value and stats forever.</p>
+    <!-- Igypt Power Up -->
+    <div id="pu-igypt">
+      <div class="hero">
+        <h2 style="font-family:Georgia,serif;letter-spacing:1px;">Offerings to the <span>Pharaoh's Vault</span></h2>
+        <p>Tribute your WETH to forge IGS/PR25 LP tokens, sealed within the NFT's sarcophagus for eternity. The Pharaoh's power grows with each offering.</p>
+      </div>
+      <div style="max-width:600px;margin:0 auto;">
+        <div style="background:#13100f;border:1px solid #c9a84c12;border-radius:14px;padding:20px;margin-bottom:20px;">
+          <h3 style="color:#c9a84c;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">The Ritual of Gold</h3>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#c9a84c22;color:#c9a84c;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">I</div>
+            <div style="font-size:13px;color:#e8d5b0;">Your WETH offering is split between two sacred vaults</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#c9a84c22;color:#c9a84c;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">II</div>
+            <div style="font-size:13px;color:#e8d5b0;">Half becomes <span style="color:#f0d070;font-weight:600;">IGS</span> (Igypt Gold Soverin), half becomes <span style="color:#f0d070;font-weight:600;">PR25</span> (children's blessings)</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#c9a84c22;color:#c9a84c;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">III</div>
+            <div style="font-size:13px;color:#e8d5b0;">Forged into IGS/PR25 LP and entombed within the NFT</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="background:#c9a84c22;color:#c9a84c;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;">&#9765;</div>
+            <div style="font-size:13px;color:#f0d070;font-weight:600;">Sealed forever &mdash; the Pharaoh's power grows, children are blessed</div>
+          </div>
+        </div>
+        <div style="background:#13100f;border:1px solid #c9a84c12;border-radius:14px;padding:20px;margin-bottom:20px;">
+          <h3 style="color:#c9a84c;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">Sacred Tokens of Igypt</h3>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #c9a84c0d;font-size:13px;">
+            <span style="color:#f0d070;font-weight:600;">IGS</span><span style="color:#e8d5b0;">Igypt Gold Soverin &mdash; the coin of the Pharaoh's treasury</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;">
+            <span style="color:#f0d070;font-weight:600;">PR25</span><span style="color:#e8d5b0;">Each token = 1 child blessed through education programs</span>
+          </div>
+        </div>
+      </div>
     </div>
 
+    <!-- Elven Power Up -->
+    <div id="pu-elven" style="display:none;">
+      <div class="hero">
+        <h2 style="font-family:Georgia,serif;letter-spacing:1px;">Blessings of the <span>Ancient Groves</span></h2>
+        <p>Channel your WETH through the roots of the World Tree. EGP and JCGWR entwine into LP tokens, bound to the NFT's spirit grove for all seasons.</p>
+      </div>
+      <div style="max-width:600px;margin:0 auto;">
+        <div style="background:#0a120c;border:1px solid #4ade8012;border-radius:14px;padding:20px;margin-bottom:20px;">
+          <h3 style="color:#4ade80;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">The Rite of Roots</h3>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#4ade8022;color:#4ade80;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">I</div>
+            <div style="font-size:13px;color:#b0e8c0;">Your WETH flows into two sacred streams</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#4ade8022;color:#4ade80;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">II</div>
+            <div style="font-size:13px;color:#b0e8c0;">Half nourishes <span style="color:#86efac;font-weight:600;">EGP</span> (Elven Grove Points), half plants <span style="color:#86efac;font-weight:600;">JCGWR</span> (trees)</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="background:#4ade8022;color:#4ade80;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">III</div>
+            <div style="font-size:13px;color:#b0e8c0;">Woven into EGP/JCGWR LP and rooted in the NFT's grove</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="background:#4ade8022;color:#4ade80;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;">&#127807;</div>
+            <div style="font-size:13px;color:#86efac;font-weight:600;">Rooted forever &mdash; the grove deepens, trees grow in the real world</div>
+          </div>
+        </div>
+        <div style="background:#0a120c;border:1px solid #4ade8012;border-radius:14px;padding:20px;margin-bottom:20px;">
+          <h3 style="color:#4ade80;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">Sacred Tokens of the Groves</h3>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #4ade800d;font-size:13px;">
+            <span style="color:#86efac;font-weight:600;">EGP</span><span style="color:#b0e8c0;">Elven Grove Points &mdash; DEX, INT & WIS for your heroes</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;">
+            <span style="color:#86efac;font-weight:600;">JCGWR</span><span style="color:#b0e8c0;">Each token = 1 real tree planted in the world</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shared power-up form -->
     <div style="max-width:600px;margin:0 auto;">
-      <!-- How it works -->
-      <div style="background:#13100f;border:1px solid #c9a84c12;border-radius:14px;padding:20px;margin-bottom:20px;">
-        <h3 style="color:#c9a84c;font-size:15px;margin-bottom:12px;">How It Works</h3>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-          <div style="background:#c9a84c22;color:#c9a84c;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">1</div>
-          <div style="font-size:13px;color:#e8d5b0;">Your WETH is split 50/50</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-          <div style="background:#c9a84c22;color:#c9a84c;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">2</div>
-          <div style="font-size:13px;color:#e8d5b0;">Half buys <span style="color:#22c55e;font-weight:600;">IGS</span> (Igypt Gold Soverin), half buys <span style="color:#22c55e;font-weight:600;">PR25</span> (kids helped)</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-          <div style="background:#c9a84c22;color:#c9a84c;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">3</div>
-          <div style="font-size:13px;color:#e8d5b0;">Combined into IGS/PR25 LP and sent to the NFT contract</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="background:#22c55e22;color:#22c55e;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">&#10003;</div>
-          <div style="font-size:13px;color:#22c55e;font-weight:600;">LP is locked forever &mdash; stats go up, kids get helped</div>
-        </div>
-      </div>
-
-      <!-- Token explainer -->
-      <div style="background:#13100f;border:1px solid #c9a84c12;border-radius:14px;padding:20px;margin-bottom:20px;">
-        <h3 style="color:#c9a84c;font-size:15px;margin-bottom:12px;">What These Tokens Do</h3>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #c9a84c0d;font-size:13px;">
-          <span style="color:#22c55e;font-weight:600;">IGS</span><span style="color:#e8d5b0;">Igypt Gold Soverin &mdash; funds game development & community</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;">
-          <span style="color:#22c55e;font-weight:600;">PR25</span><span style="color:#e8d5b0;">Each token = 1 kid helped through education programs</span>
-        </div>
-      </div>
-
-      <!-- NFT selector + amount -->
-      <div style="background:#13100f;border:1px solid #c9a84c12;border-radius:14px;padding:20px;margin-bottom:20px;">
-        <h3 style="color:#c9a84c;font-size:15px;margin-bottom:12px;">Power Up</h3>
+      <div id="puFormBox" style="background:#13100f;border:1px solid #c9a84c12;border-radius:14px;padding:20px;margin-bottom:20px;">
+        <h3 id="puFormTitle" style="color:#c9a84c;font-size:15px;margin-bottom:12px;font-family:Georgia,serif;">Make Your Offering</h3>
         <div class="field">
           <label>Select NFT Collection</label>
           <select id="puNft" style="width:100%;background:#0a0608;color:#f0d070;border:1px solid #c9a84c22;padding:10px 12px;font-size:14px;border-radius:8px;font-family:monospace;outline:none;">
@@ -1685,8 +1761,34 @@ function fmtD(n){return n.toFixed(2)}
 function esc(s){var d=document.createElement("div");d.appendChild(document.createTextNode(s||""));return d.innerHTML}
 function toast(msg,type){var t=$("toast");t.innerText=msg;t.className="t-"+(type||"info")+" on";clearTimeout(t._t);t._t=setTimeout(function(){t.className=""},4000)}
 
+// ── Nations ──
+var currentNation="igypt";
+var NATIONS={
+  igypt:{ powerUp:"0x047590925f939cc8d05Aaf42aA1699814ea35691", tokenA:"IGS", tokenB:"PR25", label:"Bazaar of Igypt", accent:"#c9a84c", formBg:"#13100f", formBorder:"#c9a84c12" },
+  elven:{ powerUp:"", tokenA:"EGP", tokenB:"JCGWR", label:"Elven Groves", accent:"#4ade80", formBg:"#0a120c", formBorder:"#4ade8012" }
+};
+
+function switchNation(id){
+  currentNation=id;
+  document.querySelectorAll(".nation-btn").forEach(function(b){b.classList.remove("active")});
+  document.querySelectorAll(".nation-btn."+id).forEach(function(b){b.classList.add("active")});
+  // Theme body
+  document.body.className=id==="elven"?"theme-elven":"";
+  // Toggle power-up content
+  $("pu-igypt").style.display=id==="igypt"?"block":"none";
+  $("pu-elven").style.display=id==="elven"?"block":"none";
+  // Style the form box
+  var n=NATIONS[id];
+  $("puFormBox").style.background=n.formBg;
+  $("puFormBox").style.borderColor=n.formBorder;
+  $("puFormTitle").style.color=n.accent;
+  $("puFormTitle").textContent=id==="igypt"?"Make Your Offering":"Channel the Roots";
+  // Update status
+  if(!n.powerUp){$("puStatus").textContent="Contract not yet deployed — deploy via deploy-powerup-elven.html";$("puStatus").style.color="#ef4444";}
+  else{$("puStatus").textContent="";}
+}
+
 // ── Power Up ──
-var POWERUP_POLY = "0x047590925f939cc8d05Aaf42aA1699814ea35691";
 var POWERUP_ABI = [
   "function powerUp(address nftContract, uint256 wethAmount) external",
   "event PoweredUp(address indexed user, address indexed nftContract, uint256 wethSpent, uint256 lpCreated)"
@@ -1724,6 +1826,7 @@ function getPuTarget(){
 async function puApprove(){
   var st=$("puStatus");
   try{
+    if(!NATIONS[currentNation].powerUp){st.textContent="Contract not yet deployed for this nation";st.style.color="#ef4444";return}
     if(!me){showConnectModal();return}
     var target=getPuTarget();
     if(!target){st.textContent="Pick a collection or paste an address";return}
@@ -1733,7 +1836,7 @@ async function puApprove(){
     st.textContent="Approving "+amt+" WETH for PowerUp contract...";
     st.style.color="#c9a84c";
     var weth=new ethers.Contract(WETH_POLY,E20,signer);
-    var tx=await weth.approve(POWERUP_POLY,wei);
+    var tx=await weth.approve(NATIONS[currentNation].powerUp,wei);
     st.textContent="Waiting for approval...";
     await tx.wait();
     st.textContent="WETH approved! Click Power Up.";
@@ -1748,6 +1851,7 @@ async function puApprove(){
 async function puExecute(){
   var st=$("puStatus");
   try{
+    if(!NATIONS[currentNation].powerUp){st.textContent="Contract not yet deployed for this nation";st.style.color="#ef4444";return}
     if(!me){showConnectModal();return}
     var target=getPuTarget();
     if(!target){st.textContent="Pick a collection or paste an address";return}
@@ -1756,7 +1860,7 @@ async function puExecute(){
     await ensureChain("polygon");
     st.textContent="Powering up "+target.slice(0,10)+"... with "+amt+" WETH";
     st.style.color="#c9a84c";
-    var c=new ethers.Contract(POWERUP_POLY,POWERUP_ABI,signer);
+    var c=new ethers.Contract(NATIONS[currentNation].powerUp,POWERUP_ABI,signer);
     var tx=await c.powerUp(target,wei);
     st.textContent="Waiting for confirmation...";
     var receipt=await tx.wait();
