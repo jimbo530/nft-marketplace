@@ -489,14 +489,14 @@ var IMPACT={
   "NCT":{label:"carbon offset",mult:1,unit:"ton",units:"tons"},
   "BCT":{label:"carbon offset",mult:1,unit:"ton",units:"tons"},
   "LTK":{label:"litter cleaned",mult:25,unit:"piece",units:"pieces"},
-  "TB01":{label:"butts cleaned",mult:1,unit:"butt",units:"butts"},
-  "PR25":{label:"kids helped",mult:1,unit:"kid",units:"kids"},
-  "PR24":{label:"kids helped",mult:1,unit:"kid",units:"kids"},
-  "JCGWR":{label:"trees",mult:1,unit:"tree",units:"trees"},
-  "AU24T":{label:"trees",mult:1,unit:"tree",units:"trees"},
+  "TB01":{label:"cleaned up",mult:1,unit:"butt",units:"butts"},
+  "PR25":{label:"helped",mult:1,unit:"kid",units:"kids"},
+  "PR24":{label:"helped",mult:1,unit:"kid",units:"kids"},
+  "JCGWR":{label:"",mult:1,unit:"tree",units:"trees"},
+  "AU24T":{label:"",mult:1,unit:"tree",units:"trees"},
   "JLT-F24":{label:"renewable energy",mult:1,unit:"MWh",units:"MWh"},
   "JLT-B23":{label:"renewable energy",mult:1,unit:"MWh",units:"MWh"},
-  "LANTERN":{label:"solar lanterns",mult:1,unit:"lantern",units:"lanterns"},
+  "LANTERN":{label:"",mult:1,unit:"solar lantern",units:"solar lanterns"},
   "BURGERS":{label:"LP fees fund food donations",mult:0},
   "REGEN":{label:"ReFi infrastructure",mult:0},
   "TGN":{label:"ReFi infrastructure",mult:0},
@@ -515,7 +515,7 @@ function fmtImpact(sym,amount){
   if(imp.mult===0)return imp.label;
   var count=amount*imp.mult;
   var u=count>=2?imp.units:imp.unit;
-  return fmtTokenAmt(count)+" "+u+" "+imp.label;
+  return imp.label?fmtTokenAmt(count)+" "+u+" "+imp.label:fmtTokenAmt(count)+" "+u;
 }
 function getTokens(addr){return tokenMap[addr.toLowerCase()]||[]}
 var pairState=null;
