@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ToT Marketplace</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0a0608; color:#e8d5b0; font-family:'Segoe UI',system-ui,sans-serif; min-height:100vh; }
+  body::before { content:''; position:fixed; inset:0; background:radial-gradient(ellipse at 50% 0%,#1a130e 0%,#0a0608 60%); pointer-events:none; z-index:-1; }
+  a { color:#c9a84c; text-decoration:none; }
+
+  /* Header */
+  header { display:flex; justify-content:space-between; align-items:center; padding:14px 24px; background:#0f0a0ddd; border-bottom:1px solid #c9a84c22; position:sticky; top:0; z-index:50; backdrop-filter:blur(12px); }
+  .logo { font-size:22px; font-weight:700; color:#c9a84c; letter-spacing:-0.5px; display:flex; align-items:center; gap:8px; }
+  .logo-icon { width:28px; height:28px; background:linear-gradient(135deg,#c9a84c,#8b6f24); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+  .logo sub { color:#776a50; font-weight:400; font-size:12px; vertical-align:baseline; margin-left:2px; letter-spacing:1px; }
+  .hdr-right { display:flex; align-items:center; gap:10px; }
+  .bal-pill { background:#c9a84c12; border:1px solid #c9a84c33; border-radius:20px; padding:6px 14px; font-size:13px; color:#f0d070; font-weight:600; display:none; }
+  .addr-pill { font-size:12px; color:#776a50; font-family:monospace; display:none; }
+  .btn { border:none; padding:9px 20px; font-size:13px; font-weight:700; border-radius:8px; cursor:pointer; transition:all .15s; }
+  .btn-gold { background:linear-gradient(135deg,#c9a84c,#a8893a); color:#0a0608; }
+  .btn-gold:hover { background:linear-gradient(135deg,#d9b85c,#c9a84c); box-shadow:0 4px 16px #c9a84c33; }
+  .btn-green { background:linear-gradient(135deg,#22c55e,#16a34a); color:#fff; }
+  .btn-green:hover { box-shadow:0 4px 16px #22c55e33; }
+  .btn-red { background:#dc2626; color:#fff; }
+  .btn-red:hover { background:#ef4444; }
+  .btn-outline { background:transparent; border:1px solid #c9a84c44; color:#c9a84c; }
+  .btn-outline:hover { background:#c9a84c15; }
+  .btn:disabled { opacity:.4; cursor:not-allowed; }
+
+  /* Tabs */
+  nav { display:flex; background:#0f0a0dcc; border-bottom:1px solid #c9a84c22; padding:0 24px; overflow-x:auto; backdrop-filter:blur(8px); }
+  nav button { background:none; border:none; color:#776a50; padding:13px 22px; font-size:14px; font-weight:600; cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap; transition:all .15s; }
+  nav button:hover { color:#e8d5b0; }
+  nav button.on { color:#c9a84c; border-bottom-color:#c9a84c; }
+
+  /* Hero */
+  .hero { text-align:center; padding:40px 20px 30px; }
+  .hero h2 { font-size:26px; color:#e8d5b0; font-weight:700; margin-bottom:6px; }
+  .hero h2 span { background:linear-gradient(90deg,#c9a84c,#f0d070); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .hero p { color:#776a50; font-size:14px; max-width:500px; margin:0 auto; line-height:1.5; }
+  .hero-stats { display:flex; justify-content:center; gap:28px; margin-top:18px; }
+  .hero-stat { text-align:center; }
+  .hero-stat .num { font-size:22px; font-weight:700; color:#f0d070; }
+  .hero-stat .label { font-size:11px; color:#776a50; text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+
+  /* Main */
+  main { max-width:1100px; margin:0 auto; padding:0 24px 40px; }
+  .page { display:none; }
+  .page.on { display:block; }
+
+  /* Section header */
+  .sec-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid #c9a84c11; }
+  .sec-head h3 { font-size:16px; color:#c9a84c; font-weight:600; }
+  .sec-head .count { font-size:12px; color:#776a50; background:#c9a84c11; padding:3px 10px; border-radius:12px; }
+
+  /* Grid */
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:16px; }
+  .card { background:#13100f; border:1px solid #c9a84c12; border-radius:14px; overflow:hidden; cursor:pointer; transition:all .25s ease; position:relative; }
+  .card:hover { border-color:#c9a84c44; transform:translateY(-4px); box-shadow:0 16px 40px #0008,0 0 0 1px #c9a84c22; }
+  .card-img-wrap { position:relative; overflow:hidden; }
+  .card-img-wrap img { width:100%; aspect-ratio:1; object-fit:cover; background:#0a0608; transition:transform .3s; }
+  .card:hover .card-img-wrap img { transform:scale(1.03); }
+  .card-body { padding:12px 14px; }
+  .card-collection { font-size:11px; color:#c9a84c; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .card-title { font-size:14px; font-weight:700; color:#e8d5b0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:8px; }
+  .card-row { display:flex; justify-content:space-between; align-items:center; }
+  .card-price { font-size:17px; font-weight:700; color:#f0d070; }
+  .card-price small { font-size:11px; font-weight:400; color:#c9a84c; }
+  .card-qty { font-size:11px; background:#c9a84c22; color:#c9a84c; padding:2px 8px; border-radius:6px; font-weight:600; }
+  .card-own { font-size:12px; color:#22c55e; font-weight:600; }
+  .card-foot { text-align:center; padding:10px; font-size:12px; font-weight:700; color:#c9a84c; background:#c9a84c08; border-top:1px solid #c9a84c0a; transition:all .2s; }
+  .card:hover .card-foot { background:#c9a84c18; }
+  .card-tag { position:absolute; top:8px; right:8px; font-size:10px; padding:3px 8px; border-radius:6px; font-weight:700; backdrop-filter:blur(4px); }
+  .tag-1155 { background:#22c55e33; color:#22c55e; }
+
+  /* Empty / Loading */
+  .empty { text-align:center; padding:80px 20px; }
+  .empty h3 { color:#776a50; font-size:18px; margin-bottom:8px; }
+  .empty p { color:#554d40; font-size:14px; line-height:1.5; }
+  .loader { text-align:center; padding:60px; }
+  .spin { width:28px; height:28px; border:3px solid #c9a84c22; border-top-color:#c9a84c; border-radius:50%; animation:sp .7s linear infinite; display:inline-block; margin-bottom:10px; }
+  @keyframes sp { to { transform:rotate(360deg) } }
+
+  /* Progress bar */
+  .progress-wrap { max-width:320px; margin:12px auto 0; }
+  .progress-bar { height:4px; background:#c9a84c22; border-radius:4px; overflow:hidden; }
+  .progress-fill { height:100%; background:linear-gradient(90deg,#c9a84c,#f0d070); border-radius:4px; transition:width .3s; width:0%; }
+  .progress-text { font-size:11px; color:#776a50; margin-top:6px; }
+
+  /* Modal */
+  .overlay { display:none; position:fixed; inset:0; background:#000c; z-index:100; align-items:center; justify-content:center; padding:20px; }
+  .overlay.on { display:flex; animation:fadeIn .2s; }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .modal { background:#13100f; border:1px solid #c9a84c33; border-radius:16px; width:100%; max-width:440px; max-height:90vh; overflow-y:auto; position:relative; animation:slideUp .25s ease; }
+  @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  .modal-close { position:absolute; top:10px; right:12px; background:#0009; border:none; color:#fff; font-size:22px; width:34px; height:34px; border-radius:50%; cursor:pointer; z-index:5; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); transition:background .15s; }
+  .modal-close:hover { background:#000d; }
+  .modal-img-wrap { position:relative; }
+  .modal-img-wrap img { width:100%; aspect-ratio:1; object-fit:cover; }
+  .modal-img-wrap .modal-collection { position:absolute; bottom:0; left:0; right:0; padding:8px 16px; background:linear-gradient(transparent,#13100fdd); font-size:11px; color:#c9a84c; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+  .modal-body { padding:20px; }
+  .modal-title { font-size:20px; font-weight:700; margin-bottom:4px; }
+  .modal-sub { font-size:12px; color:#776a50; margin-bottom:16px; }
+  .modal-desc { font-size:13px; color:#998a70; margin-bottom:16px; line-height:1.6; }
+  .detail { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #c9a84c0d; font-size:13px; }
+  .detail .lbl { color:#776a50; }
+  .detail .val { color:#e8d5b0; font-family:monospace; font-size:12px; }
+  .big-price { font-size:28px; font-weight:700; color:#f0d070; margin:16px 0 4px; }
+  .big-price small { font-size:13px; font-weight:400; color:#c9a84c; }
+
+  /* Fee breakdown */
+  .fee-breakdown { background:#0a0608; border-radius:10px; padding:12px 14px; margin:12px 0 18px; border:1px solid #c9a84c0d; }
+  .fee-row { display:flex; justify-content:space-between; padding:4px 0; font-size:12px; }
+  .fee-row .fee-label { color:#776a50; }
+  .fee-row .fee-val { color:#c9a84c; font-weight:600; }
+  .fee-row.fee-total { border-top:1px solid #c9a84c22; margin-top:4px; padding-top:8px; }
+  .fee-row.fee-total .fee-label { color:#e8d5b0; font-weight:600; }
+  .fee-row.fee-total .fee-val { color:#22c55e; }
+  .fee-note { font-size:11px; color:#554d40; margin-bottom:16px; text-align:center; }
+
+  /* Sell form inside modal */
+  .field { margin-bottom:14px; }
+  .field label { display:block; font-size:12px; color:#c9a84c; margin-bottom:4px; font-weight:600; }
+  .field input { width:100%; background:#0a0608; color:#f0d070; border:1px solid #c9a84c22; padding:10px 12px; font-size:14px; border-radius:8px; font-family:monospace; outline:none; transition:border-color .15s; }
+  .field input:focus { border-color:#c9a84c88; box-shadow:0 0 0 3px #c9a84c11; }
+  .field input::placeholder { color:#554d40; }
+  .field .hint { font-size:11px; color:#554d40; margin-top:3px; }
+  .field-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .fee-split { background:#0a0608; border-radius:10px; padding:12px 14px; margin:12px 0 18px; font-size:12px; border:1px solid #c9a84c0d; }
+  .fee-split div { display:flex; justify-content:space-between; padding:3px 0; color:#776a50; }
+  .fee-split .pct { color:#f0d070; font-weight:600; }
+
+  /* Steps progress */
+  .steps { display:flex; gap:6px; margin-bottom:16px; }
+  .step { flex:1; text-align:center; padding:8px 4px; border-radius:8px; font-size:11px; font-weight:700; background:#0a0608; color:#554d40; transition:all .2s; }
+  .step.done { background:#22c55e15; color:#22c55e; }
+  .step.active { background:#c9a84c15; color:#c9a84c; animation:pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.7} }
+
+  /* My listing rows */
+  .listing-row { display:flex; align-items:center; gap:14px; background:#13100f; border:1px solid #c9a84c12; border-radius:14px; padding:14px; margin-bottom:10px; transition:border-color .2s; }
+  .listing-row:hover { border-color:#c9a84c33; }
+  .listing-row img { width:64px; height:64px; object-fit:cover; border-radius:10px; }
+  .listing-row .info { flex:1; min-width:0; }
+  .listing-row .info h4 { font-size:14px; color:#e8d5b0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .listing-row .info .collection-name { font-size:11px; color:#c9a84c; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+  .listing-row .info .price { color:#f0d070; font-weight:700; font-size:16px; margin-top:2px; }
+  .listing-row .info .meta { color:#554d40; font-size:11px; margin-top:1px; }
+
+  /* Toast */
+  #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); padding:12px 24px; border-radius:12px; font-size:14px; font-weight:600; z-index:200; display:none; max-width:480px; text-align:center; backdrop-filter:blur(12px); box-shadow:0 8px 32px #0006; }
+  #toast.on { display:block; animation:toastUp .3s ease; }
+  .t-ok { background:#22c55e18; border:1px solid #22c55e44; color:#22c55e; }
+  .t-err { background:#dc262618; border:1px solid #dc262644; color:#dc2626; }
+  .t-info { background:#c9a84c18; border:1px solid #c9a84c44; color:#c9a84c; }
+  @keyframes toastUp { from{opacity:0;transform:translateX(-50%) translateY(12px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+
+  /* Footer */
+  footer { text-align:center; padding:32px 20px; border-top:1px solid #c9a84c0d; margin-top:40px; }
+  footer p { font-size:12px; color:#554d40; }
+  footer a { color:#776a50; }
+  footer a:hover { color:#c9a84c; }
+
+  /* Filter bar */
+  .filter-bar { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
+  .filter-btn { background:#13100f; border:1px solid #c9a84c22; color:#776a50; padding:7px 16px; font-size:12px; font-weight:600; border-radius:20px; cursor:pointer; transition:all .15s; }
+  .filter-btn:hover { border-color:#c9a84c55; color:#e8d5b0; }
+  .filter-btn.on { background:#c9a84c22; border-color:#c9a84c55; color:#c9a84c; }
+
+  /* Chain badge */
+  .chain-badge { position:absolute; top:8px; left:8px; font-size:9px; padding:3px 7px; border-radius:5px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; backdrop-filter:blur(4px); z-index:2; }
+  .chain-base { background:#2563eb33; color:#60a5fa; }
+  .chain-polygon { background:#8b5cf633; color:#a78bfa; }
+
+  /* Not-listed card overlay */
+  .card-value { font-size:11px; color:#60a5fa; font-weight:600; }
+  .card-value small { font-weight:400; color:#60a5fa99; }
+  .card-status { text-align:center; padding:8px; font-size:11px; font-weight:700; border-top:1px solid #c9a84c0a; }
+  .card-status.for-sale { color:#22c55e; background:#22c55e08; }
+  .card-status.not-listed { color:#554d40; background:#0a060800; }
+  .card-status.list-btn { color:#0f0a0d; background:#c9a84c; font-size:13px; padding:10px; cursor:pointer; letter-spacing:0.5px; }
+  .card-status.list-btn:hover { background:#e0c060; }
+
+  /* Collection group header in wallet */
+  .collection-header { font-size:13px; color:#c9a84c; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:20px 0 8px; border-bottom:1px solid #c9a84c11; margin-bottom:12px; }
+  .collection-header:first-child { padding-top:0; }
+
+  /* Responsive */
+  @media(max-width:600px) {
+    header { flex-wrap:wrap; gap:8px; padding:12px 16px; }
+    .hero { padding:28px 16px 20px; }
+    .hero h2 { font-size:22px; }
+    .hero-stats { gap:16px; }
+    .grid { grid-template-columns:repeat(auto-fill,minmax(155px,1fr)); gap:10px; }
+    main { padding:0 16px 30px; }
+    nav button { padding:11px 14px; font-size:13px; }
+    .listing-row { flex-wrap:wrap; }
+    .card-price { font-size:15px; }
+    .modal { max-width:100%; border-radius:14px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">T</div>
+    ToT<sub>MARKETPLACE</sub>
+  </div>
+  <div class="hdr-right">
+    <div class="bal-pill" id="bal"></div>
+    <div class="addr-pill" id="addr"></div>
+    <button class="btn btn-gold" id="cBtn" onclick="connect()">Connect Wallet</button>
+  </div>
+</header>
+
+<nav>
+  <button class="on" onclick="tab('browse')">Browse</button>
+  <button onclick="tab('catalog')">All ToT NFTs</button>
+  <button onclick="tab('wallet')">My NFTs</button>
+  <button onclick="tab('listings')">My Listings</button>
+</nav>
+
+<main>
+  <!-- Browse (listings only) -->
+  <div class="page on" id="p-browse">
+    <div class="hero">
+      <h2>Collect <span>Impact NFTs</span></h2>
+      <p>Every purchase creates liquidity that strengthens NFT stats and funds the community. No platform fees on primary sales.</p>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="num" id="statTotal">-</div><div class="label">Collections</div></div>
+        <div class="hero-stat"><div class="num" id="statListed">-</div><div class="label">Listed</div></div>
+        <div class="hero-stat"><div class="num" id="statValue">-</div><div class="label">Total LP Value</div></div>
+      </div>
+    </div>
+    <div class="loader" id="browseLoad"><div class="spin"></div><br>Loading listings...</div>
+    <div class="empty" id="browseNone" style="display:none"><h3>No listings yet</h3><p>NFTs listed for sale will appear here. Check out <a href="#" onclick="tab('catalog');return false" style="color:#c9a84c;">All ToT NFTs</a> to see the full collection.</p></div>
+    <div id="browseHead" style="display:none;" class="sec-head"><h3>For Sale</h3><span class="count" id="browseCount"></span></div>
+    <div class="grid" id="browseGrid"></div>
+  </div>
+
+  <!-- All ToT NFTs (full catalog) -->
+  <div class="page" id="p-catalog">
+    <div class="filter-bar" id="catFilterBar" style="display:none;">
+      <button class="filter-btn on" onclick="filterCatalog('all')">All</button>
+      <button class="filter-btn" onclick="filterCatalog('base')">Base</button>
+      <button class="filter-btn" onclick="filterCatalog('polygon')">Polygon</button>
+    </div>
+    <div class="loader" id="catLoad" style="display:none"><div class="spin"></div><br>Loading NFT catalog...</div>
+    <div class="empty" id="catNone" style="display:none"><h3>No NFTs found</h3></div>
+    <div id="catHead" style="display:none;" class="sec-head"><h3>All ToT NFTs</h3><span class="count" id="catCount"></span><span class="count" id="catValue" style="color:#60a5fa;margin-left:12px;"></span></div>
+    <div class="grid" id="catGrid"></div>
+  </div>
+
+  <!-- My NFTs -->
+  <div class="page" id="p-wallet">
+    <div class="empty" id="walletNone"><h3>Connect your wallet</h3><p>We'll scan the blockchain for your game NFTs so you can list them for sale.</p></div>
+    <div class="loader" id="walletLoad" style="display:none">
+      <div class="spin"></div>
+      <div id="walletStatus" style="color:#776a50;font-size:13px;margin-top:8px;"></div>
+      <div class="progress-wrap" id="walletProgress" style="display:none">
+        <div class="progress-bar"><div class="progress-fill" id="walletFill"></div></div>
+        <div class="progress-text" id="walletPct"></div>
+      </div>
+    </div>
+    <div id="walletHead" style="display:none;" class="sec-head"><h3>Your NFTs</h3><span class="count" id="walletCount"></span></div>
+    <div class="grid" id="walletGrid"></div>
+  </div>
+
+  <!-- My Listings -->
+  <div class="page" id="p-listings">
+    <div class="empty" id="listNone"><h3>Connect your wallet</h3><p>Your active marketplace listings will appear here.</p></div>
+    <div class="loader" id="listLoad" style="display:none"><div class="spin"></div><br>Loading your listings...</div>
+    <div id="listHead" style="display:none;" class="sec-head"><h3>Your Active Listings</h3><span class="count" id="listCount"></span></div>
+    <div id="listRows"></div>
+  </div>
+</main>
+
+<footer>
+  <p>MemeForTrees NFT Marketplace &middot; Base & Polygon &middot; Powered by AZOS & WETH</p>
+</footer>
+
+<!-- Buy Modal -->
+<div class="overlay" id="buyOv" onclick="if(event.target===this)closeBuy()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeBuy()">&times;</button>
+    <div class="modal-img-wrap">
+      <img id="bImg" src="" />
+      <div class="modal-collection" id="bCollection"></div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-title" id="bName"></div>
+      <div class="modal-sub" id="bCol"></div>
+      <div class="modal-desc" id="bDesc"></div>
+      <div class="detail"><span class="lbl">Seller</span><span class="val" id="bSeller"></span></div>
+      <div class="detail"><span class="lbl">Token ID</span><span class="val" id="bTid"></span></div>
+      <div class="detail"><span class="lbl">Artist</span><span class="val" id="bArtist"></span></div>
+      <div class="detail"><span class="lbl">LP Value Inside</span><span class="val" id="bLpValue" style="color:#60a5fa;font-weight:700;"></span></div>
+      <div class="big-price" id="bPrice"></div>
+      <div class="fee-breakdown">
+        <div class="fee-row"><span class="fee-label">LP to NFT (stat boost)</span><span class="fee-val" id="feeNft">50%</span></div>
+        <div class="fee-row"><span class="fee-label">Artist royalty</span><span class="fee-val" id="feeArtist">20%</span></div>
+        <div class="fee-row"><span class="fee-label">LP to community</span><span class="fee-val" id="feeCom">30%</span></div>
+        <div class="fee-row fee-total"><span class="fee-label">Platform fee</span><span class="fee-val">None</span></div>
+      </div>
+      <div id="bActions"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Sell Modal -->
+<div class="overlay" id="sellOv" onclick="if(event.target===this)closeSell()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeSell()">&times;</button>
+    <div class="modal-img-wrap">
+      <img id="sImg" src="" />
+      <div class="modal-collection" id="sCollection"></div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-title" id="sName"></div>
+      <div class="modal-sub" id="sCol"></div>
+      <div id="sBal" style="color:#22c55e;font-size:13px;margin-bottom:14px;font-weight:600;"></div>
+      <div class="steps" id="sSteps">
+        <div class="step" id="st1">1. Approve</div>
+        <div class="step" id="st2">2. List</div>
+        <div class="step" id="st3">Done!</div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Amount</label><input id="sAmt" type="text" value="1" /></div>
+        <div class="field"><label id="sPriceLabel">Price (AZOS)</label><input id="sPrice" placeholder="5.00" /><div class="hint" id="sPriceHint">Minimum $5 AZOS</div></div>
+      </div>
+      <div class="field"><label>Artist Wallet</label><input id="sArtist" placeholder="0x... creator address" /><div class="hint">Receives 20% royalty on every sale</div></div>
+      <div class="fee-split">
+        <div><span>LP to NFT (stat boost)</span><span class="pct">50%</span></div>
+        <div><span>Artist royalty</span><span class="pct">20%</span></div>
+        <div><span>LP to community</span><span class="pct">30%</span></div>
+        <div style="border-top:1px solid #c9a84c15;margin-top:4px;padding-top:4px;"><span>Platform fee</span><span class="pct" style="color:#22c55e;">None</span></div>
+      </div>
+      <button class="btn btn-green" id="sSub" onclick="doSell()" style="width:100%;padding:14px;font-size:15px;">List for Sale</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Config ──
+var MKT = "0x0b7350a01040d5b6664C38Ec81aA058b9236F2d8";
+var AZOS = "0x3595ca37596D5895B70EFAB592ac315D5B9809B2";
+var SUPABASE_URL = "https://yxtejarmzzbwgckvhqdx.supabase.co";
+var SUPABASE_KEY = "sb_publishable_5nlx4ASmCCcMHKmM7VFhHA_8Tw0pRgI";
+var knownNfts = [];  // ALL chains
+var IPFS_GW = ["https://ipfs.io/ipfs/","https://gateway.pinata.cloud/ipfs/","https://nftstorage.link/ipfs/"];
+var polyRpc = new ethers.JsonRpcProvider("https://polygon-bor-rpc.publicnode.com");
+var PH = "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22400%22><rect fill=%22%230f0a0d%22 width=%22400%22 height=%22400%22/><text x=%2250%25%22 y=%2248%25%22 fill=%22%23c9a84c33%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2244%22 font-family=%22serif%22>NFT</text></svg>";
+
+var MABI = [
+  "function nextListingId() view returns (uint256)",
+  "function listings(uint256) view returns (address seller,address nftContract,uint256 tokenId,uint256 amount,uint256 priceAzos,address artistWallet,bool active)",
+  "function list(address,uint256,uint256,uint256,address) returns (uint256)",
+  "function buy(uint256)","function cancel(uint256)"
+];
+var E20 = ["function approve(address,uint256) returns (bool)","function balanceOf(address) view returns (uint256)","function allowance(address,address) view returns (uint256)"];
+var E1155 = ["function setApprovalForAll(address,bool)","function isApprovedForAll(address,address) view returns (bool)","function balanceOf(address,uint256) view returns (uint256)","function balanceOfBatch(address[],uint256[]) view returns (uint256[])","function uri(uint256) view returns (string)"];
+var PAIR_ABI = ["function balanceOf(address) view returns (uint256)","function totalSupply() view returns (uint256)","function getReserves() view returns (uint112,uint112,uint32)","function token0() view returns (address)"];
+var AZOS_MFT_PAIR = "0xEcC664757dA0C71ba32DFED527580A26783b6697";
+var MKT_POLY = "0xF02D1FcC4Ad7F4C2e7fe7b75D8e4f6679178243C";
+var WETH_POLY = "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619";
+var MABI_POLY = [
+  "function nextListingId() view returns (uint256)",
+  "function listings(uint256) view returns (address seller,address nftContract,uint256 tokenId,uint256 amount,uint256 priceWeth,address artistWallet,bool active)",
+  "function effectivePrice(uint256) view returns (uint256)",
+  "function totalCost(uint256) view returns (uint256)",
+  "function list(address,uint256,uint256,uint256,address) returns (uint256)",
+  "function buy(uint256)","function cancel(uint256)"
+];
+
+// Artist wallet lookup — locked per collection so sellers can't change it
+var DEFAULT_ARTIST = "0x0780b1456D5E60CF26C8Cd6541b85E805C8c05F2";
+var NO_DEFAULT_ARTIST = [
+  "0x2953399124f0cbb46d2cbacd8a89cf0599974963", // Space Donkeys
+  "0x537ee25af1f6cdc1de66562dd0be88ea2046338f"  // Mandala Light Codes
+];
+function getArtist(addr){
+  if(NO_DEFAULT_ARTIST.indexOf(addr.toLowerCase())!==-1)return "";
+  return DEFAULT_ARTIST;
+}
+
+var rpc = new ethers.JsonRpcProvider("https://mainnet.base.org");
+var signer=null, me=null, items=[], sellNft=null, metaCache={}, walletLoaded=false, ownedLoaded=false, chainSwitching=false;
+
+// ── Cache keys ──
+var CATALOG_CACHE_KEY = "mft_catalog_v2";
+var CATALOG_CACHE_TTL = 48*60*60*1000; // 48h
+var HIDE_FROM_MARKET = ["0xcb8c8a116ac3e12d861c1b4bd0d859aceda25d3f"]; // MycoVault
+var HIDE_NAMES = ["vombatidae","veggie parfait"]; // hide by metadata name (lowercase match)
+var SINGLE_TOKEN = ["0x5b5a2bcfd8b19814bcb6be9091a892ff0ceb23c6"]; // Future Funder Ambrose — show as 1 collection
+
+function getCachedCatalog(){
+  try{var raw=localStorage.getItem(CATALOG_CACHE_KEY);if(!raw)return null;return JSON.parse(raw)}catch(e){return null}
+}
+function saveCatalogCache(cat){
+  try{
+    // Strip listings (contain bigints, and are ephemeral on-chain data anyway)
+    var safe=cat.map(function(c){return{addr:c.addr,tid:c.tid,dbName:c.dbName,chain:c.chain,meta:c.meta,lpUsd:c.lpUsd}});
+    localStorage.setItem(CATALOG_CACHE_KEY,JSON.stringify({ts:Date.now(),items:safe}));
+  }catch(e){}
+}
+
+// ── DB helpers ──
+function rpcFor(chain){return chain==="polygon"?polyRpc:rpc}
+function getCollectionName(addr){var a=addr.toLowerCase();for(var i=0;i<knownNfts.length;i++){if(knownNfts[i].contract_address.toLowerCase()===a)return knownNfts[i].name}return""}
+function getCollectionChain(addr){var a=addr.toLowerCase();for(var i=0;i<knownNfts.length;i++){if(knownNfts[i].contract_address.toLowerCase()===a)return knownNfts[i].chain}return"base"}
+
+async function loadKnownNfts(){
+  if(knownNfts.length)return;
+  try{
+    var r=await fetch(SUPABASE_URL+"/rest/v1/nfts?select=name,contract_address,chain&limit=1000",{headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY}});
+    if(r.ok){knownNfts=(await r.json()).filter(function(n){return HIDE_FROM_MARKET.indexOf(n.contract_address.toLowerCase())===-1})}
+    $("statTotal").innerText=knownNfts.length;
+  }catch(e){console.error("DB load failed",e)}
+}
+
+// ── USD backing values (multi-tier: Game API → Supabase → on-chain → localStorage) ──
+var backingMap={};  // addr -> usd string
+var BACKING_CACHE_KEY="mft_backing_cache";
+var pairState=null;
+var GAME_API="https://tales-of-tasern.vercel.app/api/stats";
+
+function getCachedBacking(){
+  try{var raw=localStorage.getItem(BACKING_CACHE_KEY);if(!raw)return null;return JSON.parse(raw)}catch(e){return null}
+}
+function saveBacking(map){
+  try{localStorage.setItem(BACKING_CACHE_KEY,JSON.stringify({ts:Date.now(),map:map}))}catch(e){}
+}
+
+// Tier 0: Game API (live computation from ALL LP pairs, most accurate)
+async function loadBackingFromGameApi(){
+  try{
+    var r=await fetch(GAME_API);
+    if(!r.ok)return false;
+    var data=await r.json();
+    if(!data.characters||!data.characters.length)return false;
+    var count=0;
+    for(var i=0;i<data.characters.length;i++){
+      var c=data.characters[i];
+      if(c.contractAddress&&typeof c.usdBacking==="number"&&c.usdBacking>0){
+        backingMap[c.contractAddress.toLowerCase()]=c.usdBacking.toFixed(2);
+        count++;
+      }
+    }
+    console.log("[MKT] Loaded",count,"USD backings from Game API");
+    return count>0;
+  }catch(e){console.warn("[MKT] Game API fetch failed:",e);return false}
+}
+
+// Tier 1: Supabase nft_d20_stats (pre-computed by daily cron, includes ALL LP pairs)
+async function loadBackingFromDb(){
+  try{
+    var r=await fetch(SUPABASE_URL+"/rest/v1/nft_d20_stats?select=key,data&key=neq.__summary__",{headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY}});
+    if(!r.ok)return false;
+    var rows=await r.json();
+    if(!rows.length)return false;
+    var count=0;
+    for(var i=0;i<rows.length;i++){
+      var d=rows[i].data;
+      if(d&&typeof d.usdBacking==="number"&&d.usdBacking>0){
+        backingMap[rows[i].key.toLowerCase()]=d.usdBacking.toFixed(2);
+        count++;
+      }
+    }
+    console.log("[MKT] Loaded",count,"USD backings from Supabase");
+    return count>0;
+  }catch(e){console.warn("[MKT] DB backing fetch failed:",e);return false}
+}
+
+// Tier 2: On-chain AZOS/MfT LP pair (fallback when DB empty)
+async function loadPairState(){
+  if(pairState)return pairState;
+  try{
+    var pair=new ethers.Contract(AZOS_MFT_PAIR,PAIR_ABI,rpc);
+    var results=await Promise.all([pair.totalSupply(),pair.getReserves(),pair.token0()]);
+    var azosReserve=results[2].toLowerCase()===AZOS.toLowerCase()?results[1][0]:results[1][1];
+    pairState={supply:results[0],azosReserve:azosReserve};
+    console.log("[MKT] Pair loaded — AZOS reserve:",ethers.formatUnits(azosReserve,18));
+    return pairState;
+  }catch(e){console.error("[MKT] Pair state failed:",e);return null}
+}
+
+async function getLpValueOnChain(nftAddr){
+  var k=nftAddr.toLowerCase();
+  if(backingMap[k])return backingMap[k];
+  try{
+    var ps=await loadPairState();
+    if(!ps||ps.supply===BigInt(0))return"0.00";
+    var pair=new ethers.Contract(AZOS_MFT_PAIR,PAIR_ABI,rpc);
+    var lpBal=await pair.balanceOf(k);
+    if(lpBal===BigInt(0))return"0.00";
+    var val=(lpBal*ps.azosReserve*BigInt(2))/ps.supply;
+    var usd=parseFloat(ethers.formatUnits(val,18)).toFixed(2);
+    backingMap[k]=usd;
+    return usd;
+  }catch(e){return"0.00"}
+}
+
+// Master loader: Game API → Supabase → on-chain → localStorage, with zero-protection
+async function loadAllBacking(){
+  // Try localStorage cache immediately
+  var cached=getCachedBacking();
+  if(cached&&cached.map){
+    for(var k in cached.map)if(!backingMap[k])backingMap[k]=cached.map[k];
+    console.log("[MKT] Applied cached backing:",Object.keys(cached.map).length,"NFTs");
+  }
+
+  // Tier 1: Supabase (seeded from game's stats, CORS-safe)
+  var dataOk=await loadBackingFromDb();
+
+  // Tier 1b: Game API fallback (only works same-origin, blocked by CORS on localhost)
+  if(!dataOk) dataOk=await loadBackingFromGameApi();
+
+  // Tier 2: On-chain fallback for NFTs still missing values
+  if(!dataOk){
+    console.log("[MKT] DB+API empty, falling back to on-chain LP reads");
+    await loadPairState();
+    var PAR=8;
+    for(var pi=0;pi<knownNfts.length;pi+=PAR){
+      var batch=knownNfts.slice(pi,pi+PAR);
+      await Promise.all(batch.map(function(entry){
+        return getLpValueOnChain(entry.contract_address).catch(function(){return"0.00"});
+      }));
+    }
+  }
+
+  // Zero-protection: never let values drop vs cached
+  if(cached&&cached.map){
+    var oldTotal=0,newTotal=0;
+    for(var ok in cached.map)oldTotal+=parseFloat(cached.map[ok]||"0");
+    for(var nk in backingMap)newTotal+=parseFloat(backingMap[nk]||"0");
+    if(newTotal<oldTotal*0.5&&oldTotal>1){
+      console.warn("[MKT] New backing",newTotal.toFixed(2),"< 50% of cached",oldTotal.toFixed(2),"— keeping cached values");
+      for(var rk in cached.map){
+        if(!backingMap[rk]||parseFloat(backingMap[rk])<parseFloat(cached.map[rk])*0.5){
+          backingMap[rk]=cached.map[rk];
+        }
+      }
+    }
+    // Per-NFT: never let a known value drop to 0
+    for(var pk in cached.map){
+      if((!backingMap[pk]||backingMap[pk]==="0.00")&&cached.map[pk]!=="0.00"){
+        backingMap[pk]=cached.map[pk];
+      }
+    }
+  }
+
+  saveBacking(backingMap);
+  console.log("[MKT] Backing loaded for",Object.keys(backingMap).length,"NFTs");
+}
+
+function getBackingUsd(addr){return backingMap[addr.toLowerCase()]||"0.00"}
+function fmtUsd(s){return"$"+parseFloat(s).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
+
+// ── Metadata (chain-aware) ──
+function resolveIpfs(uri,gw){if(uri&&uri.startsWith("ipfs://"))return gw+uri.slice(7);return uri}
+
+async function fetchMeta(uri,gw){
+  if(uri.startsWith("data:application/json")){
+    var j=uri.startsWith("data:application/json;base64,")?atob(uri.split(",")[1]):decodeURIComponent(uri.split(",")[1]);
+    return JSON.parse(j);
+  }
+  var url=resolveIpfs(uri,gw);
+  var r=await fetch(url);if(!r.ok)throw new Error(r.status);return await r.json();
+}
+
+async function getMetaChain(addr,tid,chain){
+  var k=addr.toLowerCase()+":"+tid+":"+chain;if(metaCache[k])return metaCache[k];
+  var provider=rpcFor(chain);
+  try{
+    var nft=new ethers.Contract(addr.toLowerCase(),E1155,provider);
+    var rawUri=await nft.uri(tid);
+    // Try plain decimal {id} first (most common), then hex-padded (ERC-1155 spec)
+    var uris=[];
+    if(rawUri.indexOf("{id}")!==-1){
+      uris.push(rawUri.replace("{id}",String(tid)));
+      uris.push(rawUri.replace("{id}",tid.toString(16).padStart(64,"0")));
+    }else{uris.push(rawUri)}
+    for(var ui=0;ui<uris.length;ui++){
+      for(var gi=0;gi<IPFS_GW.length;gi++){
+        try{
+          var data=await fetchMeta(uris[ui],IPFS_GW[gi]);
+          var img=data.image||data.image_url||"";
+          img=resolveIpfs(img,IPFS_GW[gi]);
+          var res={name:data.name||"Untitled",image:img,description:data.description||""};
+          metaCache[k]=res;return res;
+        }catch(e){}
+      }
+    }
+    return{name:"NFT #"+tid,image:"",description:""};
+  }catch(e){return{name:"NFT #"+tid,image:"",description:""}}
+}
+
+// ── Wallet scan (Base + Polygon) ──
+var ownedMap={};  // addr -> {tid -> bal}  — shared with Owned tab
+
+async function loadWallet(){
+  if(!me)return;
+  if(walletLoaded)return;
+  var g=$("walletGrid"),ld=$("walletLoad"),no=$("walletNone"),hd=$("walletHead");
+  g.innerHTML="";ld.style.display="block";no.style.display="none";hd.style.display="none";
+  await loadKnownNfts();
+  var owned=[];
+  ownedMap={};
+  // Scan in parallel batches of 5 contracts
+  var PAR=5;
+  for(var pi=0;pi<knownNfts.length;pi+=PAR){
+    var group=knownNfts.slice(pi,pi+PAR);
+    var results=await Promise.all(group.map(function(entry){return scanContract(entry).catch(function(){return[]})}));
+    for(var ri=0;ri<results.length;ri++){
+      for(var oi=0;oi<results[ri].length;oi++){
+        owned.push(results[ri][oi]);
+        var o=results[ri][oi];
+        if(!ownedMap[o.addr])ownedMap[o.addr]={};
+        ownedMap[o.addr][o.tid]=o.bal;
+      }
+    }
+  }
+  ld.style.display="none";
+  if(!owned.length){no.style.display="block";no.innerHTML='<h3>No NFTs found</h3><p>Connect a wallet that holds MfT NFTs.</p>';return}
+  hd.style.display="flex";$("walletCount").innerText=owned.length+" NFT"+(owned.length!==1?"s":"");
+  for(var i=0;i<owned.length;i++)renderWalletCard(owned[i],g);
+  walletLoaded=true;
+}
+
+async function scanContract(nftEntry){
+  var addr=nftEntry.contract_address.toLowerCase();
+  var chain=nftEntry.chain;
+  var provider=rpcFor(chain);
+  var found=[];
+  var con=new ethers.Contract(addr,E1155,provider);
+  var CHUNK=50, MAX_ID=200;
+  var batchFailed=false;
+  for(var start=1;start<=MAX_ID;start+=CHUNK){
+    var ids=[],addrs=[];
+    for(var j=start;j<start+CHUNK&&j<=MAX_ID;j++){ids.push(j);addrs.push(me)}
+    if(!batchFailed){
+      try{
+        var bals=await con.balanceOfBatch(addrs,ids);
+        for(var bi=0;bi<bals.length;bi++){
+          if(Number(bals[bi])>0)found.push({addr:addr,tid:ids[bi],bal:Number(bals[bi]),name:nftEntry.name,chain:chain});
+        }
+        continue;
+      }catch(e){batchFailed=true}
+    }
+    // Fallback: individual balanceOf calls when batch not supported
+    for(var si=0;si<ids.length;si++){
+      try{
+        var b=await con.balanceOf(me,ids[si]);
+        if(Number(b)>0)found.push({addr:addr,tid:ids[si],bal:Number(b),name:nftEntry.name,chain:chain});
+      }catch(e2){break}
+    }
+    if(batchFailed&&found.length===0&&start>1)break; // contract doesn't support balanceOf either
+  }
+  return found;
+}
+
+async function renderWalletCard(nft,g){
+  var m=await getMetaChain(nft.addr,nft.tid,nft.chain).catch(function(){return{name:nft.name+" #"+nft.tid,image:"",description:""}});
+  if(isHiddenName(nft.name)||isHiddenName(m.name))return;
+  var c=mk("div","card");
+  var chainCls=nft.chain==="polygon"?"chain-polygon":"chain-base";
+  var lpVal=getBackingUsd(nft.addr);
+  var valHtml=lpVal&&lpVal!=="0.00"?'<div class="card-value">'+fmtUsd(lpVal)+' <small>LP value</small></div>':'';
+  c.onclick=function(){openSell(nft.addr,nft.tid,nft.bal,m,nft.name,nft.chain)};
+  c.innerHTML='<div class="card-img-wrap"><img src="'+esc(m.image||'')+'" onerror="this.src=\''+PH+'\'"/>'+
+    '<div class="chain-badge '+chainCls+'">'+esc(nft.chain)+'</div>'+
+    (nft.bal>1?'<div style="position:absolute;top:8px;right:8px;background:#0f0a0dee;color:#c9a84c;padding:2px 8px;border-radius:10px;font-size:11px;">x'+nft.bal+'</div>':'')+
+    '</div>'+
+    '<div class="card-body"><div class="card-collection">'+esc(nft.name)+'</div>'+
+    '<div class="card-title">'+esc(m.name||nft.name)+'</div>'+
+    '<div class="card-row">'+(valHtml||'<div style="font-size:11px;color:#776a50;">Token #'+nft.tid+'</div>')+'</div></div>'+
+    '<div class="card-status list-btn">List Now</div>';
+  g.appendChild(c);
+}
+
+// ── Owned tab (catalog cards filtered to what you own) ──
+async function loadOwned(){
+  if(!me)return;
+  var g=$("ownedGrid"),ld=$("ownedLoad"),no=$("ownedNone"),hd=$("ownedHead");
+
+  // Need wallet scan data — run it if not done yet
+  if(!walletLoaded){
+    g.innerHTML="";ld.style.display="block";no.style.display="none";hd.style.display="none";
+    await loadWallet();
+  }
+
+  // Need catalog data
+  if(!catalog.length){
+    g.innerHTML="";ld.style.display="block";no.style.display="none";hd.style.display="none";
+    await loadBrowse();
+  }
+
+  ld.style.display="none";
+
+  // Filter catalog to owned NFTs
+  var mine=[];
+  var needsMeta=[];
+  for(var i=0;i<catalog.length;i++){
+    var c=catalog[i];
+    if(!ownedMap[c.addr])continue;
+    var isSingle=SINGLE_TOKEN.indexOf(c.addr)!==-1;
+    if(isSingle){
+      // Collapse to one card — sum all token IDs
+      var totalBal=0;
+      for(var tid in ownedMap[c.addr])totalBal+=ownedMap[c.addr][tid];
+      if(totalBal>0)mine.push({addr:c.addr,tid:c.tid,dbName:c.dbName,chain:c.chain,meta:c.meta,listing:c.listing,lpUsd:c.lpUsd,bal:totalBal});
+    } else {
+      // Show each token ID separately
+      var bal=ownedMap[c.addr][c.tid]||0;
+      if(bal>0)mine.push({addr:c.addr,tid:c.tid,dbName:c.dbName,chain:c.chain,meta:c.meta,listing:c.listing,lpUsd:c.lpUsd,bal:bal});
+      for(var tid2 in ownedMap[c.addr]){
+        if(Number(tid2)!==c.tid&&ownedMap[c.addr][tid2]>0){
+          var exists=mine.some(function(m){return m.addr===c.addr&&m.tid===Number(tid2)});
+          if(!exists){
+            var idx=mine.length;
+            mine.push({addr:c.addr,tid:Number(tid2),dbName:c.dbName,chain:c.chain,meta:{name:c.dbName+" #"+tid2,image:"",description:""},listing:null,lpUsd:c.lpUsd,bal:ownedMap[c.addr][tid2]});
+            needsMeta.push(idx);
+          }
+        }
+      }
+    }
+  }
+
+  if(!mine.length){no.style.display="block";no.innerHTML='<h3>No NFTs found</h3><p>You don\'t own any NFTs from the catalog yet.</p>';return}
+
+  // Fetch actual metadata for tokens that need it (non-collapsed collections)
+  if(needsMeta.length>0){
+    g.innerHTML="";ld.style.display="block";
+    var BATCH=6;
+    for(var bi=0;bi<needsMeta.length;bi+=BATCH){
+      var batch=needsMeta.slice(bi,bi+BATCH);
+      var metas=await Promise.all(batch.map(function(idx){
+        var e=mine[idx];
+        return getMetaChain(e.addr,e.tid,e.chain).catch(function(){return{name:e.dbName+" #"+e.tid,image:"",description:""}});
+      }));
+      for(var mi=0;mi<batch.length;mi++){
+        var m=metas[mi];
+        if(m.name==="NFT #"+mine[batch[mi]].tid||m.name==="Untitled")m.name=mine[batch[mi]].dbName+" #"+mine[batch[mi]].tid;
+        mine[batch[mi]].meta=m;
+      }
+    }
+    ld.style.display="none";
+  }
+
+  // Compute owned LP value
+  var ownVal=0;
+  for(var oi=0;oi<mine.length;oi++){if(mine[oi].lpUsd)ownVal+=parseFloat(mine[oi].lpUsd)}
+
+  hd.style.display="flex";
+  $("ownedCount").innerText=mine.length+" NFT"+(mine.length!==1?"s":"");
+  $("ownedValue").innerText=ownVal>0?fmtUsd(ownVal.toFixed(2))+" LP value":"";
+
+  // Sort by LP value desc, then name
+  mine.sort(function(a,b){
+    var va=parseFloat(a.lpUsd||"0"),vb=parseFloat(b.lpUsd||"0");
+    if(vb!==va)return vb-va;
+    return a.dbName.localeCompare(b.dbName);
+  });
+
+  g.innerHTML="";
+  for(var ri=0;ri<mine.length;ri++)renderOwnedCard(mine[ri],g);
+  ownedLoaded=true;
+}
+
+function renderOwnedCard(entry,g){
+  var m=entry.meta;var li=entry.listing;
+  var c=mk("div","card");
+  if(li){c.onclick=function(){openBuy(li,entry)}}
+  else{c.onclick=function(){openPreview(entry)}}
+  var chainCls=entry.chain==="polygon"?"chain-polygon":"chain-base";
+  var valHtml=entry.lpUsd&&entry.lpUsd!=="0.00"?'<div class="card-value">'+fmtUsd(entry.lpUsd)+' <small>LP</small></div>':'';
+  c.innerHTML='<div class="card-img-wrap"><img src="'+esc(m.image||'')+'" onerror="this.src=\''+PH+'\'"/>'+
+    '<div class="chain-badge '+chainCls+'">'+esc(entry.chain)+'</div>'+
+    (entry.bal>1?'<div style="position:absolute;top:8px;right:8px;background:#0f0a0dee;color:#c9a84c;padding:2px 8px;border-radius:10px;font-size:11px;">x'+entry.bal+'</div>':'')+
+    '</div>'+
+    '<div class="card-body"><div class="card-collection">'+esc(entry.dbName)+'</div>'+
+    '<div class="card-title">'+esc(m.name||entry.dbName)+'</div>'+
+    '<div class="card-row">'+
+      (valHtml||'<div style="font-size:11px;color:#776a50;">Token #'+entry.tid+'</div>')+
+    '</div></div>'+
+    (!li?'<div class="card-status for-sale">Sell</div>':
+     '<div class="card-status for-sale">Listed</div>');
+  // Make unlisted NFTs clickable to sell
+  if(!li){
+    c.onclick=function(){openSell(entry.addr,entry.tid,entry.bal,m,entry.dbName,entry.chain)};
+  }
+  g.appendChild(c);
+}
+
+// ── Wallet ──
+async function connect() {
+  if (!window.ethereum){toast("Install MetaMask or a Web3 wallet","err");return}
+  try {
+    await ethereum.request({method:"eth_requestAccounts"});
+    try{await ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x2105"}]})}catch(e){}
+    var p=new ethers.BrowserProvider(ethereum);
+    signer=await p.getSigner(); me=await signer.getAddress();
+    $("addr").innerText=short(me); $("addr").style.display="block";
+    $("cBtn").innerText=short(me); $("cBtn").className="btn btn-outline";
+    var b=await new ethers.Contract(AZOS,E20,rpc).balanceOf(me);
+    $("bal").innerText=fmt(b)+" AZOS"; $("bal").style.display="block";
+    ethereum.on("accountsChanged",()=>location.reload());
+    ethereum.on("chainChanged",()=>{if(!chainSwitching)location.reload()});
+    loadBrowse(); loadWallet();
+  } catch(e){toast(e.message,"err")}
+}
+
+async function ensureChain(chain){
+  var id=chain==="polygon"?"0x89":"0x2105";
+  chainSwitching=true;
+  try{await ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:id}]})}
+  catch(e){chainSwitching=false;throw new Error("Please switch to "+(chain==="polygon"?"Polygon":"Base")+" network")}
+  var p=new ethers.BrowserProvider(ethereum);signer=await p.getSigner();
+  setTimeout(function(){chainSwitching=false},2000);
+}
+
+// ── Tabs ──
+function tab(id) {
+  document.querySelectorAll("nav button").forEach((b,i)=>b.className=["browse","catalog","wallet","listings"][i]===id?"on":"");
+  document.querySelectorAll(".page").forEach(p=>p.className="page");
+  $("p-"+id).className="page on";
+  if(id==="catalog"&&!catalogLoaded)loadCatalog();
+  if(id==="wallet"&&me)loadWallet();
+  if(id==="listings"&&me)loadMyListings();
+}
+
+// ── Browse — active listings only ──
+var catalog=[];
+var catalogLoaded=false;
+var catFilter="all";
+
+async function loadBrowse() {
+  var g=$("browseGrid"),ld=$("browseLoad"),no=$("browseNone"),hd=$("browseHead");
+  g.innerHTML="";ld.style.display="block";no.style.display="none";hd.style.display="none";
+  items=[];
+
+  try {
+    await loadKnownNfts();
+    await loadAllBacking();
+
+    // Load active marketplace listings — Base
+    try{
+      var c=new ethers.Contract(MKT,MABI,rpc);
+      var n=Number(await c.nextListingId());
+      for(var i=0;i<n;i++){try{
+        var l=await c.listings(i);if(!l.active)continue;
+        var it={id:i,seller:l.seller,nft:l.nftContract,tid:Number(l.tokenId),amt:Number(l.amount),price:l.priceAzos,artist:l.artistWallet,chain:"base"};
+        items.push(it);
+      }catch(e){}}
+    }catch(e){}
+
+    // Load Polygon marketplace listings
+    try{
+      var cp=new ethers.Contract(MKT_POLY,MABI_POLY,polyRpc);
+      var np=Number(await cp.nextListingId());
+      for(var ip=0;ip<np;ip++){try{
+        var lp=await cp.listings(ip);if(!lp.active)continue;
+        items.push({id:ip,seller:lp.seller,nft:lp.nftContract,tid:Number(lp.tokenId),amt:Number(lp.amount),price:lp.priceWeth,artist:lp.artistWallet,chain:"polygon"});
+      }catch(e){}}
+    }catch(e){}
+
+    $("statListed").innerText=items.length;
+
+    // Compute total LP value for header
+    var totalVal=0;
+    for(var ti=0;ti<knownNfts.length;ti++){totalVal+=parseFloat(getBackingUsd(knownNfts[ti].contract_address)||"0")}
+    if(totalVal>0)$("statValue").innerText=fmtUsd(totalVal.toFixed(2));
+
+    ld.style.display="none";
+    hd.style.display="flex";
+
+    // Render active listings
+    if(items.length){
+      $("browseCount").innerText=items.length+" listing"+(items.length!==1?"s":"");
+      var BATCH=4;
+      for(var bi=0;bi<items.length;bi+=BATCH){
+        var batch=items.slice(bi,bi+BATCH);
+        var metas=await Promise.all(batch.map(function(it){
+          return getMetaChain(it.nft,it.tid,it.chain||"base").catch(function(){return{name:"NFT",image:"",description:""}});
+        }));
+        for(var mi=0;mi<batch.length;mi++){
+          var it=batch[mi];
+          var m=metas[mi];
+          var cn=getCollectionName(it.nft);
+          if(m.name==="NFT #"+it.tid||m.name==="Untitled")m.name=cn||"NFT #"+it.tid;
+          var entry={addr:it.nft.toLowerCase(),tid:it.tid,dbName:cn,chain:it.chain||"base",meta:m,listing:it,lpUsd:getBackingUsd(it.nft)};
+          renderCatalogCard(entry,g);
+        }
+      }
+    }
+
+    // Also show owned unlisted NFTs with sell buttons
+    if(me&&walletLoaded&&ownedMap){
+      var ownedEntries=[];
+      for(var oi=0;oi<knownNfts.length;oi++){
+        var ne=knownNfts[oi];var oa=ne.contract_address.toLowerCase();
+        if(!ownedMap[oa])continue;
+        // Skip if already listed
+        var alreadyListed=items.some(function(it){return it.nft.toLowerCase()===oa});
+        if(alreadyListed)continue;
+        var ob=0;for(var ok in ownedMap[oa])ob+=ownedMap[oa][ok];
+        if(ob>0)ownedEntries.push({addr:oa,chain:ne.chain,name:ne.name,bal:ob});
+      }
+      if(ownedEntries.length){
+        if(!items.length){$("browseCount").innerText=ownedEntries.length+" owned NFT"+(ownedEntries.length!==1?"s":"")+" — list them for sale!"}
+        for(var oei=0;oei<ownedEntries.length;oei++){
+          var oe=ownedEntries[oei];
+          var om=await getMetaChain(oe.addr,1,oe.chain).catch(function(){return{name:oe.name,image:"",description:""}});
+          var oentry={addr:oe.addr,tid:1,dbName:oe.name,chain:oe.chain,meta:om,listing:null,lpUsd:getBackingUsd(oe.addr)};
+          renderCatalogCard(oentry,g);
+        }
+      }
+    }
+
+    if(!items.length&&g.children.length===0){no.style.display="block";hd.style.display="none";return}
+  }catch(e){
+    ld.style.display="none";no.style.display="block";console.error(e);
+  }
+}
+
+// ── All ToT NFTs — full catalog ──
+async function loadCatalog() {
+  var g=$("catGrid"),ld=$("catLoad"),no=$("catNone"),hd=$("catHead"),fb=$("catFilterBar");
+  g.innerHTML="";ld.style.display="block";no.style.display="none";hd.style.display="none";fb.style.display="none";
+  catalog=[];
+
+  // ── 1. Show cached catalog instantly if available ──
+  var cached=getCachedCatalog();
+  var cacheHasLp=cached&&cached.items&&cached.items.length>0&&cached.items.some(function(c){return c.lpUsd&&c.lpUsd!=="0.00"});
+  if(cached&&cached.items&&cached.items.length>0&&cacheHasLp){
+    catalog=cached.items;
+    ld.style.display="none";hd.style.display="flex";fb.style.display="flex";
+    catFilter="all";renderCatalog();
+    console.log("[MKT] Showing cached catalog:",catalog.length,"NFTs");
+  } else if(cached&&cached.items){
+    console.log("[MKT] Cache missing LP values, will rebuild");
+    cached=null;
+  }
+
+  // ── 2. Fetch fresh data in background ──
+  try {
+    await loadKnownNfts();
+    await loadAllBacking();
+
+    var fresh=[];
+    var BATCH=8;
+    for(var bi=0;bi<knownNfts.length;bi+=BATCH){
+      var batch=knownNfts.slice(bi,bi+BATCH);
+      var metas=await Promise.all(batch.map(function(entry){
+        return getMetaChain(entry.contract_address.toLowerCase(),1,entry.chain).catch(function(){return{name:entry.name,image:"",description:""}});
+      }));
+      for(var mi=0;mi<batch.length;mi++){
+        var entry=batch[mi];
+        var addr=entry.contract_address.toLowerCase();
+        var m=metas[mi];
+        if(m.name==="NFT #1"||m.name==="Untitled")m.name=entry.name;
+        fresh.push({addr:addr,tid:1,dbName:entry.name,chain:entry.chain,meta:m,listing:null,lpUsd:getBackingUsd(addr)});
+      }
+    }
+
+    // ── 3. Zero-protection: don't replace good cached data with bad fetch ──
+    if(cached&&cached.items&&cached.items.length>0&&fresh.length>0){
+      var oldWithImg=cached.items.filter(function(c){return c.meta&&c.meta.image}).length;
+      var newWithImg=fresh.filter(function(c){return c.meta&&c.meta.image}).length;
+      if(newWithImg<oldWithImg*0.5&&oldWithImg>5){
+        console.warn("[MKT] New data has",newWithImg,"images vs cached",oldWithImg,"— keeping cached, backfilling");
+        var oldMap={};
+        for(var oi=0;oi<cached.items.length;oi++){var oc=cached.items[oi];oldMap[oc.addr]=oc}
+        for(var fi=0;fi<fresh.length;fi++){
+          var fc=fresh[fi];var old=oldMap[fc.addr];
+          if(!old)continue;
+          if(!fc.meta.image&&old.meta.image){fc.meta.image=old.meta.image;fc.meta.name=old.meta.name;fc.meta.description=old.meta.description}
+          if(fc.lpUsd==="0.00"&&old.lpUsd&&old.lpUsd!=="0.00")fc.lpUsd=old.lpUsd;
+        }
+      }
+      var cMap={};
+      for(var ci=0;ci<cached.items.length;ci++){var cc=cached.items[ci];cMap[cc.addr]=cc}
+      for(var fi2=0;fi2<fresh.length;fi2++){
+        var fc2=fresh[fi2];var old2=cMap[fc2.addr];
+        if(!old2)continue;
+        if(!fc2.meta.image&&old2.meta.image)fc2.meta.image=old2.meta.image;
+        if((fc2.meta.name==="NFT #1"||fc2.meta.name==="Untitled")&&old2.meta.name&&old2.meta.name!=="NFT #1")fc2.meta.name=old2.meta.name;
+      }
+    }
+
+    // ── 4. Backfill: ensure every cached NFT still appears ──
+    if(cached&&cached.items){
+      var freshAddrs=new Set(fresh.map(function(c){return c.addr}));
+      for(var bi2=0;bi2<cached.items.length;bi2++){
+        if(!freshAddrs.has(cached.items[bi2].addr)){
+          fresh.push(cached.items[bi2]);
+          console.log("[MKT] Backfilled missing:",cached.items[bi2].dbName);
+        }
+      }
+    }
+
+    catalog=fresh;
+    saveCatalogCache(fresh);
+
+    ld.style.display="none";
+    if(!catalog.length){no.style.display="block";return}
+    hd.style.display="flex";
+    fb.style.display="flex";
+    catFilter="all";
+    renderCatalog();
+    catalogLoaded=true;
+  }catch(e){
+    ld.style.display="none";
+    if(catalog.length){console.warn("[MKT] Fresh fetch failed, keeping cached catalog");return}
+    no.style.display="block";console.error(e);
+  }
+}
+
+function filterCatalog(f){
+  catFilter=f;
+  document.querySelectorAll("#catFilterBar .filter-btn").forEach(function(b){
+    var map={"All":"all","Base":"base","Polygon":"polygon"};
+    b.className="filter-btn"+(map[b.innerText]===f?" on":"");
+  });
+  renderCatalog();
+}
+
+function isHiddenName(name){
+  if(!name)return false;
+  var low=name.toLowerCase();
+  for(var i=0;i<HIDE_NAMES.length;i++){if(low.indexOf(HIDE_NAMES[i])!==-1)return true}
+  return false;
+}
+
+function renderCatalog(){
+  var g=$("catGrid");g.innerHTML="";
+  var filtered=catalog.filter(function(c){
+    if(isHiddenName(c.dbName)||isHiddenName(c.meta&&c.meta.name))return false;
+    if(catFilter==="base")return c.chain==="base";
+    if(catFilter==="polygon")return c.chain==="polygon";
+    return true;
+  });
+  var totalVal=0;
+  for(var ti=0;ti<catalog.length;ti++){if(catalog[ti].lpUsd)totalVal+=parseFloat(catalog[ti].lpUsd)}
+  $("catCount").innerText=filtered.length+" NFT"+(filtered.length!==1?"s":"");
+  $("catValue").innerText=totalVal>0?fmtUsd(totalVal.toFixed(2))+" total LP":"";
+  filtered.sort(function(a,b){
+    var va=parseFloat(a.lpUsd||"0"),vb=parseFloat(b.lpUsd||"0");
+    if(vb!==va)return vb-va;
+    return a.dbName.localeCompare(b.dbName);
+  });
+  for(var i=0;i<filtered.length;i++)renderCatalogCard(filtered[i],g);
+}
+
+function renderCatalogCard(entry,g){
+  var m=entry.meta;var li=entry.listing;
+  var c=mk("div","card");
+  var owned=me&&ownedMap&&ownedMap[entry.addr];
+  var bal=0;if(owned){for(var k in ownedMap[entry.addr])bal+=ownedMap[entry.addr][k]}
+  if(li){c.onclick=function(){openBuy(li,entry)}}
+  else if(owned&&bal>0){c.onclick=function(){openSell(entry.addr,entry.tid,bal,m,entry.dbName,entry.chain)}}
+  else{c.onclick=function(){openPreview(entry)}}
+  c.setAttribute("data-addr",entry.addr);
+  var chainCls=entry.chain==="polygon"?"chain-polygon":"chain-base";
+  var valHtml=entry.lpUsd&&entry.lpUsd!=="0.00"?'<div class="card-value">'+fmtUsd(entry.lpUsd)+' <small>LP value</small></div>':'';
+  c.innerHTML='<div class="card-img-wrap"><img src="'+esc(m.image||'')+'" onerror="this.src=\''+PH+'\'"/>'+
+    '<div class="chain-badge '+chainCls+'">'+esc(entry.chain)+'</div></div>'+
+    '<div class="card-body"><div class="card-collection">'+esc(entry.dbName)+'</div>'+
+    '<div class="card-title">'+esc(m.name||entry.dbName)+'</div>'+
+    (li?'<div class="card-row"><div class="card-price">'+fmt(li.price)+' <small>'+(li.chain==="polygon"?"WETH":"AZOS")+'</small></div>'+
+      (li.amt>1?'<div class="card-qty">x'+li.amt+'</div>':'')+'</div>':
+      '<div class="card-row">'+(valHtml||'<div style="font-size:12px;color:#554d40;">Not listed</div>')+'</div>')+
+    (li&&valHtml?'<div class="card-row" style="margin-top:2px;">'+valHtml+'</div>':'')+
+    '</div>'+
+    (li?'<div class="card-status for-sale">Buy Now</div>':
+     owned&&bal>0?'<div class="card-status list-btn">Sell</div>':
+     '<div class="card-status not-listed">View</div>');
+  g.appendChild(c);
+}
+
+// Buy modal for listed NFTs
+function openBuy(li,entry){
+  var m=entry?entry.meta:{name:"",image:"",description:""};
+  var cn=entry?entry.dbName:getCollectionName(li.nft);
+  var ch=li.chain||"base";
+  var tok=ch==="polygon"?"WETH":"AZOS";
+  if(!m.image){getMetaChain(li.nft,li.tid,ch).then(function(mm){$("bImg").src=mm.image||PH;$("bName").innerText=mm.name||cn;$("bDesc").innerText=mm.description||""}).catch(function(){})}
+  $("bImg").src=m.image||PH;$("bImg").onerror=function(){this.src=PH};
+  $("bCollection").innerText=cn;
+  $("bName").innerText=m.name||cn;
+  $("bCol").innerText=ch.toUpperCase()+" \u00b7 Token #"+li.tid+" \u00b7 "+short(li.nft);
+  $("bDesc").innerText=m.description||"";
+  $("bSeller").innerText=short(li.seller);
+  $("bTid").innerText=li.tid;
+  $("bArtist").innerText=short(li.artist);
+  $("bPrice").innerHTML=fmt(li.price)+' <small>'+tok+'</small>';
+  $("bLpValue").innerText=entry&&entry.lpUsd&&entry.lpUsd!=="0.00"?fmtUsd(entry.lpUsd):"\u2014";
+  var p=parseFloat(ethers.formatUnits(li.price,18));
+  $("feeNft").innerText=fmtUsd((p*0.5).toFixed(2));
+  $("feeArtist").innerText=fmtUsd((p*0.2).toFixed(2));
+  $("feeCom").innerText=fmtUsd((p*0.3).toFixed(2));
+  var isMe=me&&li.seller.toLowerCase()===me.toLowerCase();
+  $("bActions").innerHTML=isMe
+    ?'<button class="btn btn-red" style="width:100%;padding:12px;" onclick="doCancel('+li.id+',\''+ch+'\')">Cancel Listing</button>'
+    :'<button class="btn btn-green" id="buyBtn" style="width:100%;padding:14px;font-size:15px;" onclick="doBuy('+li.id+',\''+ch+'\')">Buy for '+fmt(li.price)+' '+tok+'</button>';
+  $("buyOv").classList.add("on");
+}
+
+// Preview modal for unlisted NFTs
+function openPreview(entry){
+  var m=entry.meta;
+  $("bImg").src=m.image||PH;$("bImg").onerror=function(){this.src=PH};
+  $("bCollection").innerText=entry.dbName;
+  $("bName").innerText=m.name||entry.dbName;
+  $("bCol").innerText=entry.chain.toUpperCase()+" \u00b7 Token #"+entry.tid+" \u00b7 "+short(entry.addr);
+  $("bDesc").innerText=m.description||"";
+  $("bSeller").innerText="\u2014";
+  $("bTid").innerText=entry.tid;
+  $("bArtist").innerText="\u2014";
+  $("bLpValue").innerText=entry.lpUsd&&entry.lpUsd!=="0.00"?fmtUsd(entry.lpUsd):"\u2014";
+  $("bPrice").innerHTML='<span style="color:#554d40;font-size:16px;">Not listed for sale</span>';
+  $("feeNft").innerText="\u2014";$("feeArtist").innerText="\u2014";$("feeCom").innerText="\u2014";
+  var chainNote="This NFT is not currently listed for sale.";
+  $("bActions").innerHTML='<div style="text-align:center;padding:10px;color:#776a50;font-size:13px;">'+chainNote+'</div>';
+  $("buyOv").classList.add("on");
+}
+function closeBuy(){$("buyOv").classList.remove("on")}
+
+async function doBuy(id,chain){
+  var b=$("buyBtn");b.disabled=true;
+  try{
+    var ch=chain||"base";
+    await ensureChain(ch);
+    if(ch==="polygon"){
+      var weth=new ethers.Contract(WETH_POLY,E20,signer);
+      var tc=await new ethers.Contract(MKT_POLY,MABI_POLY,polyRpc).totalCost(id);
+      var allow=await weth.allowance(me,MKT_POLY);
+      if(allow<tc){b.innerText="Approving WETH...";toast("Approve WETH spend in wallet...","info");var t1=await weth.approve(MKT_POLY,tc);await t1.wait()}
+      b.innerText="Buying...";toast("Confirm purchase in wallet...","info");
+      var mkt=new ethers.Contract(MKT_POLY,MABI_POLY,signer);var t2=await mkt.buy(id);await t2.wait();
+    } else {
+      var it=items.find(x=>x.id===id&&x.chain==="base");
+      var azos=new ethers.Contract(AZOS,E20,signer);
+      var allow=await azos.allowance(me,MKT);
+      if(allow<it.price){b.innerText="Approving AZOS...";toast("Approve AZOS spend in wallet...","info");var t1=await azos.approve(MKT,it.price);await t1.wait()}
+      b.innerText="Buying...";toast("Confirm purchase in wallet...","info");
+      var mkt=new ethers.Contract(MKT,MABI,signer);var t2=await mkt.buy(id);await t2.wait();
+    }
+    toast("Purchase complete!","ok");closeBuy();loadBrowse();
+    var nb=await new ethers.Contract(AZOS,E20,rpc).balanceOf(me);$("bal").innerText=fmt(nb)+" AZOS";
+    walletLoaded=false;ownedLoaded=false;
+  }catch(e){toast("Buy failed: "+(e.reason||e.shortMessage||e.message),"err");b.disabled=false;b.innerText="Buy"}
+}
+
+async function doCancel(id,chain){
+  try{
+    var ch=chain||"base";await ensureChain(ch);
+    var mktAddr=ch==="polygon"?MKT_POLY:MKT;var mktAbi=ch==="polygon"?MABI_POLY:MABI;
+    toast("Confirm cancel in wallet...","info");var mkt=new ethers.Contract(mktAddr,mktAbi,signer);var tx=await mkt.cancel(id);await tx.wait();toast("Cancelled!","ok");closeBuy();loadBrowse()
+  }catch(e){toast("Cancel failed: "+(e.reason||e.message),"err")}
+}
+
+// ── Sell Modal ──
+function openSell(addr,tid,bal,m,colName,chain){
+  var ch=chain||"base";
+  sellNft={addr,tid,bal,chain:ch};
+  var tok=ch==="polygon"?"WETH":"AZOS";
+  $("sImg").src=m.image||PH;$("sImg").onerror=function(){this.src=PH};
+  $("sCollection").innerText=colName||short(addr);
+  $("sName").innerText=m.name||"#"+tid;
+  $("sCol").innerText=ch.toUpperCase()+" · Token #"+tid+" · "+short(addr);
+  $("sBal").innerText="You own: "+bal;
+  var artistAddr=getArtist(addr);
+  $("sAmt").value="1";$("sPrice").value="";$("sArtist").value=artistAddr;
+  $("sArtist").readOnly=!!artistAddr;
+  $("sArtist").style.opacity=artistAddr?"0.6":"1";
+  $("sPriceLabel").innerText="Price ("+tok+")";
+  $("sPriceHint").innerText=ch==="polygon"?"Minimum 0.0025 WETH (~$5)":"Minimum $5 AZOS";
+  $("st1").className="step";$("st2").className="step";$("st3").className="step";
+  $("sSub").disabled=false;$("sSub").innerText="List for Sale";
+  $("sellOv").classList.add("on");
+}
+function closeSell(){$("sellOv").classList.remove("on")}
+
+async function doSell(){
+  if(!sellNft)return;
+  var ch=sellNft.chain||"base";
+  var amt=$("sAmt").value.trim(), price=$("sPrice").value.trim(), artist=$("sArtist").value.trim();
+  if(!amt||!price||!artist){toast("Fill in all fields","err");return}
+  if(Number(amt)>sellNft.bal){toast("You only own "+sellNft.bal,"err");return}
+  var pw;try{pw=ethers.parseUnits(price,18)}catch(e){toast("Invalid price","err");return}
+  if(ch==="base"&&pw<ethers.parseUnits("5",18)){toast("Minimum price is 5 AZOS","err");return}
+  if(ch==="polygon"&&pw<ethers.parseUnits("0.0025",18)){toast("Minimum price is 0.0025 WETH (~$5)","err");return}
+  if(!ethers.isAddress(artist)){toast("Invalid artist wallet address","err");return}
+
+  var mktAddr=ch==="polygon"?MKT_POLY:MKT;
+  var mktAbi=ch==="polygon"?MABI_POLY:MABI;
+  var chainRpc=ch==="polygon"?polyRpc:rpc;
+  var btn=$("sSub");btn.disabled=true;
+  try{
+    await ensureChain(ch);
+    $("st1").className="step active";btn.innerText="Approving...";
+    var nft=new ethers.Contract(sellNft.addr,E1155,signer);
+    var ok=await new ethers.Contract(sellNft.addr,E1155,chainRpc).isApprovedForAll(me,mktAddr);
+    if(!ok){toast("Approve marketplace in wallet...","info");var t1=await nft.setApprovalForAll(mktAddr,true);await t1.wait()}
+    $("st1").className="step done";
+
+    $("st2").className="step active";btn.innerText="Listing...";
+    toast("Confirm listing in wallet...","info");
+    var mkt=new ethers.Contract(mktAddr,mktAbi,signer);
+    var t2=await mkt.list(sellNft.addr,sellNft.tid,amt,pw,artist);await t2.wait();
+    $("st2").className="step done";$("st3").className="step done";
+
+    toast("Listed successfully!","ok");
+    walletLoaded=false;ownedLoaded=false;
+    setTimeout(function(){closeSell();tab("browse");loadBrowse()},800);
+  }catch(e){
+    toast("List failed: "+(e.reason||e.shortMessage||e.message),"err");
+    btn.disabled=false;btn.innerText="List for Sale";
+  }
+}
+
+// ── My Listings ──
+async function loadMyListings(){
+  var rows=$("listRows"),ld=$("listLoad"),no=$("listNone"),hd=$("listHead");
+  rows.innerHTML="";no.style.display="none";ld.style.display="block";hd.style.display="none";
+  try{
+    var found=0;
+    // Base listings
+    try{
+    var c=new ethers.Contract(MKT,MABI,rpc);var n=Number(await c.nextListingId());
+    for(var i=0;i<n;i++){try{
+      var l=await c.listings(i);if(!l.active||l.seller.toLowerCase()!==me.toLowerCase())continue;found++;
+      var m=await getMeta(l.nftContract,Number(l.tokenId));
+      var colName=getCollectionName(l.nftContract);
+      var r=mk("div","listing-row");
+      r.innerHTML='<img src="'+esc(m.image||"")+'" onerror="this.src=\''+PH+'\'"/>'+
+        '<div class="info">'+(colName?'<div class="collection-name">'+esc(colName)+'</div>':'')+
+        '<h4>'+esc(m.name||"#"+Number(l.tokenId))+'</h4><div class="price">'+fmt(l.priceAzos)+' AZOS</div>'+
+        '<div class="meta">BASE · Listing #'+i+' · '+Number(l.amount)+' edition(s)</div></div>'+
+        '<button class="btn btn-red" onclick="cancelMy('+i+',\'base\',this)">Cancel</button>';
+      rows.appendChild(r);
+    }catch(e){}}
+    }catch(e){}
+    // Polygon listings
+    try{
+    var cp=new ethers.Contract(MKT_POLY,MABI_POLY,polyRpc);var np=Number(await cp.nextListingId());
+    for(var ip=0;ip<np;ip++){try{
+      var lp=await cp.listings(ip);if(!lp.active||lp.seller.toLowerCase()!==me.toLowerCase())continue;found++;
+      var mp=await getMetaChain(lp.nftContract,Number(lp.tokenId),"polygon").catch(function(){return{name:"#"+Number(lp.tokenId),image:""}});
+      var cnp=getCollectionName(lp.nftContract);
+      var rp=mk("div","listing-row");
+      rp.innerHTML='<img src="'+esc(mp.image||"")+'" onerror="this.src=\''+PH+'\'"/>'+
+        '<div class="info">'+(cnp?'<div class="collection-name">'+esc(cnp)+'</div>':'')+
+        '<h4>'+esc(mp.name||"#"+Number(lp.tokenId))+'</h4><div class="price">'+fmt(lp.priceWeth)+' WETH</div>'+
+        '<div class="meta">POLYGON · Listing #'+ip+' · '+Number(lp.amount)+' edition(s)</div></div>'+
+        '<button class="btn btn-red" onclick="cancelMy('+ip+',\'polygon\',this)">Cancel</button>';
+      rows.appendChild(rp);
+    }catch(e){}}
+    }catch(e){}
+    ld.style.display="none";
+    if(!found){no.style.display="block";no.innerHTML='<h3>No active listings</h3><p>List NFTs from the "My NFTs" tab.</p>'}
+    else{hd.style.display="flex";$("listCount").innerText=found+" listing"+(found>1?"s":"")}
+  }catch(e){ld.style.display="none";no.style.display="block"}
+}
+async function cancelMy(id,chain,btn){
+  btn.disabled=true;btn.innerText="Cancelling...";
+  try{
+    var ch=chain||"base";await ensureChain(ch);
+    var mktAddr=ch==="polygon"?MKT_POLY:MKT;var mktAbi=ch==="polygon"?MABI_POLY:MABI;
+    var mkt=new ethers.Contract(mktAddr,mktAbi,signer);var tx=await mkt.cancel(id);await tx.wait();toast("Cancelled!","ok");loadMyListings();loadBrowse()
+  }catch(e){toast(e.reason||e.message,"err");btn.disabled=false;btn.innerText="Cancel"}
+}
+
+// ── Metadata (legacy wrapper) ──
+async function getMeta(addr,tid){return getMetaChain(addr,tid,"base")}
+
+// ── Helpers ──
+function $(id){return document.getElementById(id)}
+function mk(tag,cls){var e=document.createElement(tag);e.className=cls;return e}
+function short(a){return a?a.slice(0,6)+"..."+a.slice(-4):""}
+function fmt(wei){return parseFloat(ethers.formatUnits(wei,18)).toFixed(2)}
+function fmtD(n){return n.toFixed(2)}
+function esc(s){var d=document.createElement("div");d.appendChild(document.createTextNode(s||""));return d.innerHTML}
+function toast(msg,type){var t=$("toast");t.innerText=msg;t.className="t-"+(type||"info")+" on";clearTimeout(t._t);t._t=setTimeout(function(){t.className=""},4000)}
+
+// ── Init ──
+loadKnownNfts().then(function(){loadBrowse()});
+if(window.ethereum&&ethereum.selectedAddress)connect();
+</script>
+</body>
+</html>

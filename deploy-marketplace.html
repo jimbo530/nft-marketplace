@@ -1,0 +1,272 @@
+<!DOCTYPE html><html><head><title>Deploy NFT Marketplace</title><script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script></head>
+<body style="background:#0a0608;color:#e8d5b0;font-family:Georgia;padding:30px;text-align:center;max-width:900px;margin:0 auto;">
+<h1 style="color:#c9a84c;">MfT NFT Marketplace</h1>
+<p>Deploy the marketplace contract on Base. Accepts AZOS stablecoin, routes payments to AZOS/MfT LP.</p>
+<p style="color:#888;font-size:13px;">No platform fee | 50% LP&rarr;NFT (stat boost) | 20% artist | 30% LP&rarr;community</p>
+
+<div style="margin:20px 0;text-align:left;max-width:600px;margin:20px auto;">
+  <label style="color:#c9a84c;">Platform Wallet:</label><br>
+  <input id="platformWallet" type="text" placeholder="0x..." style="background:#1a1418;color:#f0d070;border:1px solid #c9a84c44;padding:10px;font-size:13px;width:100%;margin:5px 0 15px;font-family:monospace;box-sizing:border-box;" />
+  <label style="color:#c9a84c;">Community Wallet:</label><br>
+  <input id="communityWallet" type="text" placeholder="0x..." style="background:#1a1418;color:#f0d070;border:1px solid #c9a84c44;padding:10px;font-size:13px;width:100%;margin:5px 0 15px;font-family:monospace;box-sizing:border-box;" />
+</div>
+
+<div style="margin:20px 0;">
+  <button onclick="deploy()" id="btnDeploy" style="background:#c9a84c;color:#0a0608;border:none;padding:14px 30px;font-size:15px;font-weight:bold;border-radius:8px;cursor:pointer;">Deploy Marketplace</button>
+</div>
+
+<div style="margin:20px 0;text-align:left;max-width:600px;margin:20px auto;">
+  <label style="color:#c9a84c;">Or reconnect to existing contract:</label><br>
+  <input id="existingAddr" type="text" placeholder="0x..." style="background:#1a1418;color:#f0d070;border:1px solid #c9a84c44;padding:10px;font-size:13px;width:100%;margin:5px 0 10px;font-family:monospace;box-sizing:border-box;" />
+  <button onclick="reconnect()" style="background:#4ade80;color:#0a0608;border:none;padding:10px 20px;font-size:14px;font-weight:bold;border-radius:8px;cursor:pointer;">Reconnect</button>
+</div>
+
+<p id="status" style="margin:20px;color:#4ade80;"></p>
+
+<div id="postDeploy" style="display:none;margin:30px auto;max-width:700px;">
+  <h2 style="color:#c9a84c;">Marketplace Deployed!</h2>
+  <p>Contract: <span id="contractAddr" style="color:#f0d070;font-family:monospace;"></span></p>
+  <hr style="border-color:#c9a84c44;">
+
+  <h3 style="color:#c9a84c;">Test: List an NFT</h3>
+  <div style="text-align:left;">
+    <label style="color:#c9a84c;">NFT Contract (ERC-1155):</label><br>
+    <input id="nftAddr" type="text" placeholder="0x..." style="background:#1a1418;color:#f0d070;border:1px solid #c9a84c44;padding:8px;font-size:13px;width:100%;margin:5px 0 10px;font-family:monospace;box-sizing:border-box;" />
+    <label style="color:#c9a84c;">Token ID:</label><br>
+    <input id="tokenId" type="text" value="1" style="background:#1a1418;color:#f0d070;border:1px solid #c9a84c44;padding:8px;font-size:13px;width:200px;margin:5px 0 10px;font-family:monospace;" />
+    <label style="color:#c9a84c;">Amount:</label><br>
+    <input id="amount" type="text" value="1" style="background:#1a1418;color:#f0d070;border:1px solid #c9a84c44;padding:8px;font-size:13px;width:200px;margin:5px 0 10px;font-family:monospace;" />
+    <label style="color:#c9a84c;">Price (AZOS, min $5):</label><br>
+    <input id="price" type="text" value="5" style="background:#1a1418;color:#f0d070;border:1px solid #c9a84c44;padding:8px;font-size:13px;width:200px;margin:5px 0 10px;font-family:monospace;" />
+    <label style="color:#c9a84c;">Artist Wallet:</label><br>
+    <input id="artistWallet" type="text" placeholder="0x..." style="background:#1a1418;color:#f0d070;border:1px solid #c9a84c44;padding:8px;font-size:13px;width:100%;margin:5px 0 10px;font-family:monospace;box-sizing:border-box;" />
+  </div>
+  <div style="margin:15px 0;">
+    <button onclick="approveNft()" style="background:#c9a84c;color:#0a0608;border:none;padding:10px 20px;font-size:14px;font-weight:bold;border-radius:8px;cursor:pointer;">1. Approve NFT</button>
+    <button onclick="listNft()" style="background:#4ade80;color:#0a0608;border:none;padding:10px 20px;font-size:14px;font-weight:bold;border-radius:8px;cursor:pointer;margin-left:10px;">2. List NFT</button>
+  </div>
+
+  <hr style="border-color:#c9a84c44;margin:25px 0;">
+
+  <h3 style="color:#c9a84c;">Test: Buy a Listed NFT</h3>
+  <div style="text-align:left;">
+    <label style="color:#c9a84c;">Listing ID:</label><br>
+    <input id="buyListingId" type="text" value="0" style="background:#1a1418;color:#f0d070;border:1px solid #c9a84c44;padding:8px;font-size:13px;width:200px;margin:5px 0 10px;font-family:monospace;" />
+    <label style="color:#c9a84c;">Price (AZOS — must match listing):</label><br>
+    <input id="buyPrice" type="text" value="5" style="background:#1a1418;color:#f0d070;border:1px solid #c9a84c44;padding:8px;font-size:13px;width:200px;margin:5px 0 10px;font-family:monospace;" />
+  </div>
+  <div style="margin:15px 0;">
+    <button onclick="approveAzos()" style="background:#c9a84c;color:#0a0608;border:none;padding:10px 20px;font-size:14px;font-weight:bold;border-radius:8px;cursor:pointer;">1. Approve AZOS</button>
+    <button onclick="buyNft()" style="background:#4ade80;color:#0a0608;border:none;padding:10px 20px;font-size:14px;font-weight:bold;border-radius:8px;cursor:pointer;margin-left:10px;">2. Buy NFT</button>
+  </div>
+
+  <hr style="border-color:#c9a84c44;margin:25px 0;">
+
+  <h3 style="color:#c9a84c;">Cancel Listing</h3>
+  <div style="text-align:left;">
+    <label style="color:#c9a84c;">Listing ID:</label><br>
+    <input id="cancelListingId" type="text" value="0" style="background:#1a1418;color:#f0d070;border:1px solid #c9a84c44;padding:8px;font-size:13px;width:200px;margin:5px 0 10px;font-family:monospace;" />
+  </div>
+  <button onclick="cancelListing()" style="background:#ef4444;color:#fff;border:none;padding:10px 20px;font-size:14px;font-weight:bold;border-radius:8px;cursor:pointer;">Cancel Listing</button>
+</div>
+
+<div id="log" style="margin:20px 0;padding:15px;background:#1a1418;border:1px solid #c9a84c44;border-radius:8px;text-align:left;font-family:monospace;font-size:11px;max-height:400px;overflow-y:auto;display:none;"></div>
+
+<script>
+var AZOS = "0x3595ca37596D5895B70EFAB592ac315D5B9809B2";
+
+var BYTECODE = "0x6080604052348015600e575f5ffd5b5060405161183a38038061183a833981016040819052602b91607f565b5f80546001600160a01b03199081163317909155600180546001600160a01b039485169083161790556002805492909316911617905560ab565b80516001600160a01b0381168114607a575f5ffd5b919050565b5f5f60408385031215608f575f5ffd5b6096836065565b915060a2602084016065565b90509250929050565b611782806100b85f395ff3fe608060405234801561000f575f5ffd5b506004361061011c575f3560e01c8063bc197c81116100a9578063e00050791161006e578063e00050791461031c578063f23a6e611461032f578063f2fde38b1461034f578063f887ea4014610362578063fa2af9da1461037d575f5ffd5b8063bc197c8114610201578063c75748391461023c578063d96a094a1461024f578063dc8138e214610262578063de74e57b1461027d575f5ffd5b806385d6bb81116100ef57806385d6bb81146101a35780638831e9cf146101b65780638da5cb5b146101c9578063aaccf1ec146101db578063ad9f20a6146101f2575f5ffd5b806301ffc9a71461012057806340e58ee51461014857806369ebbe2e1461015d5780637a4e4ecf14610190575b5f5ffd5b61013361012e366004611204565b610390565b60405190151581526020015b60405180910390f35b61015b610156366004611232565b6103c6565b005b610178738fb87d13b40b1a67b22ed1a17e2835fe7e3a9ba381565b6040516001600160a01b03909116815260200161013f565b61015b61019e366004611264565b61052b565b61015b6101b136600461128c565b6105cd565b61015b6101c436600461128c565b610618565b5f54610178906001600160a01b031681565b6101e460035481565b60405190815260200161013f565b6101e4674563918244f4000081565b61022361020f36600461132b565b63bc197c8160e01b98975050505050505050565b6040516001600160e01b0319909116815260200161013f565b600254610178906001600160a01b031681565b61015b61025d366004611232565b610663565b610178733595ca37596d5895b70efab592ac315d5b9809b281565b6102d861028b366004611232565b600460208190525f91825260409091208054600182015460028301546003840154948401546005909401546001600160a01b0393841695928416949193811690600160a01b900460ff1687565b604080516001600160a01b03988916815296881660208801528601949094526060850192909252608084015290921660a082015290151560c082015260e00161013f565b6101e461032a3660046113ea565b610963565b61022361033d366004611436565b63f23a6e6160e01b9695505050505050565b61015b61035d36600461128c565b610ca2565b610178734752ba5dbc23f44d87826276bf6fd6b1c372ad2481565b600154610178906001600160a01b031681565b5f630271189760e51b6001600160e01b0319831614806103c057506301ffc9a760e01b6001600160e01b03198316145b92915050565b5f8181526004602052604090206005810154600160a01b900460ff166104205760405162461bcd60e51b815260206004820152600a6024820152694e6f742061637469766560b01b60448201526064015b60405180910390fd5b80546001600160a01b031633148061044157505f546001600160a01b031633145b61047e5760405162461bcd60e51b815260206004820152600e60248201526d139bdd08185d5d1a1bdc9a5e995960921b6044820152606401610417565b60058101805460ff60a01b191690556001810154815460028301546003840154604051637921219560e11b81526001600160a01b039485169463f242432a946104d094309491909216926004016114a9565b5f604051808303815f87803b1580156104e7575f5ffd5b505af11580156104f9573d5f5f3e3d5ffd5b50506040518492507fc41d93b8bfbf9fd7cf5bfe271fd649ab6a6fec0ea101c23b82a2a28eca2533a991505f90a25050565b5f546001600160a01b031633146105545760405162461bcd60e51b8152600401610417906114e0565b5f5460405163a9059cbb60e01b81526001600160a01b039182166004820152602481018390529083169063a9059cbb906044015b6020604051808303815f875af11580156105a4573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906105c89190611503565b505050565b5f546001600160a01b031633146105f65760405162461bcd60e51b8152600401610417906114e0565b600280546001600160a01b0319166001600160a01b0392909216919091179055565b5f546001600160a01b031633146106415760405162461bcd60e51b8152600401610417906114e0565b600180546001600160a01b0319166001600160a01b0392909216919091179055565b5f8181526004602052604090206005810154600160a01b900460ff166106b85760405162461bcd60e51b815260206004820152600a6024820152694e6f742061637469766560b01b6044820152606401610417565b60058101805460ff60a01b191690556004808201546040516323b872dd60e01b815233928101929092523060248301526044820152733595ca37596d5895b70efab592ac315d5b9809b2906323b872dd906064016020604051808303815f875af1158015610728573d5f5f3e3d5ffd5b505050506040513d601f19601f8201168201806040525081019061074c9190611503565b505f6064826004015460326107619190611536565b61076b919061154d565b90505f6064836004015460146107819190611536565b61078b919061154d565b90505f8183856004015461079f919061156c565b6107a9919061156c565b600585015460405163a9059cbb60e01b81526001600160a01b03909116600482015260248101849052909150733595ca37596d5895b70efab592ac315d5b9809b29063a9059cbb906044016020604051808303815f875af1158015610810573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906108349190611503565b5060018401545f906108509085906001600160a01b0316610cec565b6002549091505f9061086c9084906001600160a01b0316610cec565b905061088b733595ca37596d5895b70efab592ac315d5b9809b261115d565b6108a8738fb87d13b40b1a67b22ed1a17e2835fe7e3a9ba361115d565b600186015460028701546003880154604051637921219560e11b81526001600160a01b039093169263f242432a926108e8923092339291906004016114a9565b5f604051808303815f87803b1580156108ff575f5ffd5b505af1158015610911573d5f5f3e3d5ffd5b505060408051858152602081018590529081018790523392508991507f47c2f180f415c943169b11c4bd61c71dbd5f15ed83b496b3a65a47a3a21d63b49060600160405180910390a350505050505050565b5f674563918244f400008310156109b55760405162461bcd60e51b815260206004820152601660248201527550726963652062656c6f77202435206d696e696d756d60501b6044820152606401610417565b5f84116109f25760405162461bcd60e51b815260206004820152600b60248201526a16995c9bc8185b5bdd5b9d60aa1b6044820152606401610417565b6001600160a01b038216610a3b5760405162461bcd60e51b815260206004820152601060248201526f139bc8185c9d1a5cdd081dd85b1b195d60821b6044820152606401610417565b60405163e985e9c560e01b81523360048201523060248201526001600160a01b0387169063e985e9c590604401602060405180830381865afa158015610a83573d5f5f3e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610aa79190611503565b610af35760405162461bcd60e51b815260206004820152601860248201527f4d61726b6574706c616365206e6f7420617070726f76656400000000000000006044820152606401610417565b604051637921219560e11b81526001600160a01b0387169063f242432a90610b2590339030908a908a906004016114a9565b5f604051808303815f87803b158015610b3c575f5ffd5b505af1158015610b4e573d5f5f3e3d5ffd5b505060038054925090505f610b628361157f565b909155506040805160e081018252338082526001600160a01b038a811660208085019182528486018c8152606086018c8152608087018c81528b861660a08901908152600160c08a018181525f8d81526004978890528c90209a518b54908a166001600160a01b0319918216178c559751918b018054928a16929098169190911790965592516002890155905160038801555191860191909155516005909401805491511515600160a01b026001600160a81b031990921694909216939093179290921790915590519192509082907f77c5bc2a2b6cb4c5d4c824dbd7ee7d5ed943318c5b50472783221372a3c4bfc290610c91908a908a908a908a908a906001600160a01b039586168152602081019490945260408401929092526060830152909116608082015260a00190565b60405180910390a395945050505050565b5f546001600160a01b03163314610ccb5760405162461bcd60e51b8152600401610417906114e0565b5f80546001600160a01b0319166001600160a01b0392909216919091179055565b5f80610cf960028561154d565b60405163095ea7b360e01b8152734752ba5dbc23f44d87826276bf6fd6b1c372ad24600482015260248101829052909150733595ca37596d5895b70efab592ac315d5b9809b29063095ea7b3906044016020604051808303815f875af1158015610d65573d5f5f3e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610d899190611503565b506040805160028082526060820183525f92602083019080368337019050509050733595ca37596d5895b70efab592ac315d5b9809b2815f81518110610dd157610dd16115ab565b60200260200101906001600160a01b031690816001600160a01b031681525050738fb87d13b40b1a67b22ed1a17e2835fe7e3a9ba381600181518110610e1957610e196115ab565b6001600160a01b0390921660209283029190910190910152734752ba5dbc23f44d87826276bf6fd6b1c372ad246338ed1739835f8430610e5b4261012c6115bf565b6040518663ffffffff1660e01b8152600401610e7b9594939291906115d2565b5f604051808303815f875af1158015610e96573d5f5f3e3d5ffd5b505050506040513d5f823e601f3d908101601f19168201604052610ebd9190810190611642565b505f610ec9838761156c565b6040516370a0823160e01b81523060048201529091505f90738fb87d13b40b1a67b22ed1a17e2835fe7e3a9ba3906370a0823190602401602060405180830381865afa158015610f1b573d5f5f3e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610f3f919061170a565b60405163095ea7b360e01b8152734752ba5dbc23f44d87826276bf6fd6b1c372ad24600482015260248101849052909150733595ca37596d5895b70efab592ac315d5b9809b29063095ea7b3906044016020604051808303815f875af1158015610fab573d5f5f3e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610fcf9190611503565b5060405163095ea7b360e01b8152734752ba5dbc23f44d87826276bf6fd6b1c372ad24600482015260248101829052738fb87d13b40b1a67b22ed1a17e2835fe7e3a9ba39063095ea7b3906044016020604051808303815f875af1158015611039573d5f5f3e3d5ffd5b505050506040513d601f19601f8201168201806040525081019061105d9190611503565b50734752ba5dbc23f44d87826276bf6fd6b1c372ad2463e8e33700733595ca37596d5895b70efab592ac315d5b9809b2738fb87d13b40b1a67b22ed1a17e2835fe7e3a9ba385855f808d6110b34261012c6115bf565b60405160e08a901b6001600160e01b03191681526001600160a01b039889166004820152968816602488015260448701959095526064860193909352608485019190915260a484015290921660c482015260e4810191909152610104016060604051808303815f875af115801561112c573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906111509190611721565b9998505050505050505050565b6040516370a0823160e01b81523060048201525f906001600160a01b038316906370a0823190602401602060405180830381865afa1580156111a1573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906111c5919061170a565b905080156112005760405163a9059cbb60e01b8152336004820152602481018290526001600160a01b0383169063a9059cbb90604401610588565b5050565b5f60208284031215611214575f5ffd5b81356001600160e01b03198116811461122b575f5ffd5b9392505050565b5f60208284031215611242575f5ffd5b5035919050565b80356001600160a01b038116811461125f575f5ffd5b919050565b5f5f60408385031215611275575f5ffd5b61127e83611249565b946020939093013593505050565b5f6020828403121561129c575f5ffd5b61122b82611249565b5f5f83601f8401126112b5575f5ffd5b50813567ffffffffffffffff8111156112cc575f5ffd5b6020830191508360208260051b85010111156112e6575f5ffd5b9250929050565b5f5f83601f8401126112fd575f5ffd5b50813567ffffffffffffffff811115611314575f5ffd5b6020830191508360208285010111156112e6575f5ffd5b5f5f5f5f5f5f5f5f60a0898b031215611342575f5ffd5b61134b89611249565b975061135960208a01611249565b9650604089013567ffffffffffffffff811115611374575f5ffd5b6113808b828c016112a5565b909750955050606089013567ffffffffffffffff81111561139f575f5ffd5b6113ab8b828c016112a5565b909550935050608089013567ffffffffffffffff8111156113ca575f5ffd5b6113d68b828c016112ed565b999c989b5096995094979396929594505050565b5f5f5f5f5f60a086880312156113fe575f5ffd5b61140786611249565b945060208601359350604086013592506060860135915061142a60808701611249565b90509295509295909350565b5f5f5f5f5f5f60a0878903121561144b575f5ffd5b61145487611249565b955061146260208801611249565b94506040870135935060608701359250608087013567ffffffffffffffff81111561148b575f5ffd5b61149789828a016112ed565b979a9699509497509295939492505050565b6001600160a01b0394851681529290931660208301526040820152606081019190915260a0608082018190525f9082015260c00190565b6020808252600990820152682737ba1037bbb732b960b91b604082015260600190565b5f60208284031215611513575f5ffd5b8151801515811461122b575f5ffd5b634e487b7160e01b5f52601160045260245ffd5b80820281158282048414176103c0576103c0611522565b5f8261156757634e487b7160e01b5f52601260045260245ffd5b500490565b818103818111156103c0576103c0611522565b5f6001820161159057611590611522565b5060010190565b634e487b7160e01b5f52604160045260245ffd5b634e487b7160e01b5f52603260045260245ffd5b808201808211156103c0576103c0611522565b5f60a0820187835286602084015260a0604084015280865180835260c0850191506020880192505f5b818110156116225783516001600160a01b03168352602093840193909201916001016115fb565b50506001600160a01b039590951660608401525050608001529392505050565b5f60208284031215611652575f5ffd5b815167ffffffffffffffff811115611668575f5ffd5b8201601f81018413611678575f5ffd5b805167ffffffffffffffff81111561169257611692611597565b8060051b604051601f19603f830116810181811067ffffffffffffffff821117156116bf576116bf611597565b6040529182526020818401810192908101878411156116dc575f5ffd5b6020850194505b838510156116ff578451808252602095860195909350016116e3565b509695505050505050565b5f6020828403121561171a575f5ffd5b5051919050565b5f5f5f60608486031215611733575f5ffd5b505081516020830151604090930151909492935091905056fea2646970667358221220f2226205d0e29d5ca962770fa0e9bd7694fe1040f0ef5803ed2102efed4f545764736f6c63430008220033";
+
+var ABI = [{"inputs":[{"internalType":"address","name":"_platformWallet","type":"address"},{"internalType":"address","name":"_communityWallet","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"listingId","type":"uint256"}],"name":"Cancelled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"listingId","type":"uint256"},{"indexed":true,"internalType":"address","name":"seller","type":"address"},{"indexed":false,"internalType":"address","name":"nftContract","type":"address"},{"indexed":false,"internalType":"uint256","name":"tokenId","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"priceAzos","type":"uint256"},{"indexed":false,"internalType":"address","name":"artistWallet","type":"address"}],"name":"Listed","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"listingId","type":"uint256"},{"indexed":true,"internalType":"address","name":"buyer","type":"address"},{"indexed":false,"internalType":"uint256","name":"lpToNft","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"lpToCommunity","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"toArtist","type":"uint256"}],"name":"Sold","type":"event"},{"inputs":[],"name":"AZOS","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MFT","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MIN_PRICE","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"listingId","type":"uint256"}],"name":"buy","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"listingId","type":"uint256"}],"name":"cancel","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"communityWallet","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"nftContract","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"uint256","name":"priceAzos","type":"uint256"},{"internalType":"address","name":"artistWallet","type":"address"}],"name":"list","outputs":[{"internalType":"uint256","name":"listingId","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"listings","outputs":[{"internalType":"address","name":"seller","type":"address"},{"internalType":"address","name":"nftContract","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"uint256","name":"priceAzos","type":"uint256"},{"internalType":"address","name":"artistWallet","type":"address"},{"internalType":"bool","name":"active","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"nextListingId","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"},{"internalType":"uint256[]","name":"","type":"uint256[]"},{"internalType":"uint256[]","name":"","type":"uint256[]"},{"internalType":"bytes","name":"","type":"bytes"}],"name":"onERC1155BatchReceived","outputs":[{"internalType":"bytes4","name":"","type":"bytes4"}],"stateMutability":"pure","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"bytes","name":"","type":"bytes"}],"name":"onERC1155Received","outputs":[{"internalType":"bytes4","name":"","type":"bytes4"}],"stateMutability":"pure","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"platformWallet","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"rescue","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"router","outputs":[{"internalType":"contract IRouter","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"w","type":"address"}],"name":"setCommunityWallet","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"w","type":"address"}],"name":"setPlatformWallet","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes4","name":"interfaceId","type":"bytes4"}],"name":"supportsInterface","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"pure","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+
+var ERC20_ABI = [
+  {"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"stateMutability":"view","type":"function"}
+];
+
+var ERC1155_ABI = [
+  {"inputs":[{"name":"operator","type":"address"},{"name":"approved","type":"bool"}],"name":"setApprovalForAll","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"name":"account","type":"address"},{"name":"operator","type":"address"}],"name":"isApprovedForAll","outputs":[{"name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"name":"account","type":"address"},{"name":"id","type":"uint256"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+];
+
+var contractAddr = null;
+var signer = null;
+
+function log(msg, color) {
+  var el = document.getElementById("log");
+  el.style.display = "block";
+  el.innerHTML += "<div style='margin:3px 0;color:" + (color || "#e8d5b0") + ";'>" + msg + "</div>";
+  el.scrollTop = el.scrollHeight;
+}
+
+async function getSigner() {
+  if (signer) return signer;
+  if (!window.ethereum) { throw new Error("No wallet found"); }
+  await window.ethereum.request({method:"eth_requestAccounts"});
+  try { await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x2105"}]}); } catch(e) { log("Switch to Base (8453) manually", "#ef4444"); }
+  var p = new ethers.BrowserProvider(window.ethereum);
+  signer = await p.getSigner();
+  log("Wallet: " + await signer.getAddress(), "#4ade80");
+  return signer;
+}
+
+async function reconnect() {
+  var addr = document.getElementById("existingAddr").value.trim();
+  if (!addr) { document.getElementById("status").innerText = "Enter contract address"; return; }
+  var sig = await getSigner();
+  contractAddr = addr;
+  document.getElementById("contractAddr").innerText = contractAddr;
+  document.getElementById("postDeploy").style.display = "block";
+  document.getElementById("status").innerHTML = "Reconnected to <span style='color:#f0d070;font-family:monospace;'>" + contractAddr + "</span>";
+  log("Reconnected to " + contractAddr, "#4ade80");
+}
+
+async function deploy() {
+  var s = document.getElementById("status");
+  var btn = document.getElementById("btnDeploy");
+  btn.disabled = true;
+  try {
+    var pw = document.getElementById("platformWallet").value.trim();
+    var cw = document.getElementById("communityWallet").value.trim();
+    if (!pw || !cw) { s.innerText = "Enter both wallet addresses"; btn.disabled = false; return; }
+
+    s.innerText = "Connecting wallet...";
+    var sig = await getSigner();
+
+    s.innerText = "Deploying marketplace... confirm in wallet";
+    log("Deploying with platformWallet=" + pw + ", communityWallet=" + cw);
+    var f = new ethers.ContractFactory(ABI, BYTECODE, sig);
+    var c = await f.deploy(pw, cw);
+    s.innerText = "Waiting for confirmation...";
+    await c.waitForDeployment();
+    contractAddr = await c.getAddress();
+    log("Marketplace deployed: " + contractAddr, "#4ade80");
+    s.innerHTML = "Deployed at <span style='color:#f0d070;font-family:monospace;'>" + contractAddr + "</span>";
+    document.getElementById("contractAddr").innerText = contractAddr;
+    document.getElementById("postDeploy").style.display = "block";
+  } catch(e) {
+    s.innerHTML = "Error: " + e.message;
+    log("Deploy error: " + e.message, "#ef4444");
+    btn.disabled = false;
+  }
+}
+
+async function approveNft() {
+  var s = document.getElementById("status");
+  try {
+    var sig = await getSigner();
+    var nftAddr = document.getElementById("nftAddr").value.trim();
+    if (!nftAddr || !contractAddr) { s.innerText = "Missing NFT address or contract"; return; }
+    s.innerText = "Approving marketplace for your NFTs...";
+    var nft = new ethers.Contract(nftAddr, ERC1155_ABI, sig);
+    var tx = await nft.setApprovalForAll(contractAddr, true);
+    log("Approval tx: " + tx.hash);
+    await tx.wait();
+    log("NFT approved for marketplace!", "#4ade80");
+    s.innerText = "NFT approved! Now click List NFT.";
+  } catch(e) {
+    s.innerText = "Approve error: " + e.message;
+    log("Approve error: " + e.message, "#ef4444");
+  }
+}
+
+async function listNft() {
+  var s = document.getElementById("status");
+  try {
+    var sig = await getSigner();
+    var nftAddr = document.getElementById("nftAddr").value.trim();
+    var tokenId = document.getElementById("tokenId").value.trim();
+    var amount = document.getElementById("amount").value.trim();
+    var price = document.getElementById("price").value.trim();
+    var artist = document.getElementById("artistWallet").value.trim();
+    if (!nftAddr || !tokenId || !amount || !price || !artist) { s.innerText = "Fill all fields"; return; }
+
+    var priceWei = ethers.parseUnits(price, 18);
+    s.innerText = "Listing NFT for " + price + " AZOS...";
+    var market = new ethers.Contract(contractAddr, ABI, sig);
+    var tx = await market.list(nftAddr, tokenId, amount, priceWei, artist);
+    log("List tx: " + tx.hash);
+    var receipt = await tx.wait();
+    // Parse Listed event
+    var iface = new ethers.Interface(ABI);
+    for (var l of receipt.logs) {
+      try {
+        var parsed = iface.parseLog(l);
+        if (parsed && parsed.name === "Listed") {
+          log("Listed! ID=" + parsed.args.listingId.toString(), "#4ade80");
+        }
+      } catch(e) {}
+    }
+    s.innerText = "NFT listed!";
+  } catch(e) {
+    s.innerText = "List error: " + e.message;
+    log("List error: " + e.message, "#ef4444");
+  }
+}
+
+async function approveAzos() {
+  var s = document.getElementById("status");
+  try {
+    var sig = await getSigner();
+    var price = document.getElementById("buyPrice").value.trim();
+    var priceWei = ethers.parseUnits(price, 18);
+    s.innerText = "Approving " + price + " AZOS for marketplace...";
+    var azos = new ethers.Contract(AZOS, ERC20_ABI, sig);
+    var tx = await azos.approve(contractAddr, priceWei);
+    log("AZOS approve tx: " + tx.hash);
+    await tx.wait();
+    log("AZOS approved!", "#4ade80");
+    s.innerText = "AZOS approved! Now click Buy NFT.";
+  } catch(e) {
+    s.innerText = "Approve error: " + e.message;
+    log("AZOS approve error: " + e.message, "#ef4444");
+  }
+}
+
+async function buyNft() {
+  var s = document.getElementById("status");
+  try {
+    var sig = await getSigner();
+    var listingId = document.getElementById("buyListingId").value.trim();
+    s.innerText = "Buying listing #" + listingId + "...";
+    var market = new ethers.Contract(contractAddr, ABI, sig);
+    var tx = await market.buy(listingId);
+    log("Buy tx: " + tx.hash);
+    var receipt = await tx.wait();
+    var iface = new ethers.Interface(ABI);
+    for (var l of receipt.logs) {
+      try {
+        var parsed = iface.parseLog(l);
+        if (parsed && parsed.name === "Sold") {
+          log("Sold! LP to NFT: " + parsed.args.lpToNft.toString() + ", LP to community: " + parsed.args.lpToCommunity.toString() + ", Artist: " + ethers.formatUnits(parsed.args.toArtist, 18) + " AZOS", "#4ade80");
+        }
+      } catch(e) {}
+    }
+    s.innerText = "Purchase complete!";
+  } catch(e) {
+    s.innerText = "Buy error: " + e.message;
+    log("Buy error: " + e.message, "#ef4444");
+  }
+}
+
+async function cancelListing() {
+  var s = document.getElementById("status");
+  try {
+    var sig = await getSigner();
+    var listingId = document.getElementById("cancelListingId").value.trim();
+    s.innerText = "Cancelling listing #" + listingId + "...";
+    var market = new ethers.Contract(contractAddr, ABI, sig);
+    var tx = await market.cancel(listingId);
+    log("Cancel tx: " + tx.hash);
+    await tx.wait();
+    log("Listing cancelled, NFT returned!", "#4ade80");
+    s.innerText = "Listing cancelled.";
+  } catch(e) {
+    s.innerText = "Cancel error: " + e.message;
+    log("Cancel error: " + e.message, "#ef4444");
+  }
+}
+</script>
+</body></html>
