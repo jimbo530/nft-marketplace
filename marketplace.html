@@ -213,6 +213,7 @@
   <div class="hdr-right">
     <div class="bal-pill" id="bal"></div>
     <div class="addr-pill" id="addr"></div>
+    <button class="btn btn-outline" onclick="shareLink()" title="Copy link to clipboard">Share</button>
     <button class="btn btn-gold" id="cBtn" onclick="connect()">Connect Wallet</button>
   </div>
 </header>
@@ -825,6 +826,11 @@ function renderOwnedCard(entry,g){
     c.onclick=function(){openSell(entry.addr,entry.tid,entry.bal,m,entry.dbName,entry.chain)};
   }
   g.appendChild(c);
+}
+
+// ── Share ──
+function shareLink(){
+  navigator.clipboard.writeText(window.location.href).then(function(){toast("Link copied!")}).catch(function(){toast("Couldn't copy link","err")});
 }
 
 // ── Wallet ──
