@@ -306,6 +306,7 @@
         <div class="fee-row"><span class="fee-label">LP to community</span><span class="fee-val" id="feeCom">30%</span></div>
         <div class="fee-row fee-total"><span class="fee-label">Platform fee</span><span class="fee-val">None</span></div>
       </div>
+      <div id="bSharedNote" style="text-align:center;padding:8px 12px;margin-bottom:12px;font-size:11px;color:#c9a84c99;background:#c9a84c08;border-radius:8px;">NFTs in the same collection share LP — every sale powers up the whole collection</div>
       <div id="bActions"></div>
     </div>
   </div>
@@ -372,6 +373,7 @@ var WETH_POLY = "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619";
 var MABI_POLY = [
   "function nextListingId() view returns (uint256)",
   "function listings(uint256) view returns (address seller,address nftContract,uint256 tokenId,uint256 amount,uint256 priceWeth,address artistWallet,bool active)",
+  "function getLpValue(address) view returns (uint256)",
   "function effectivePrice(uint256) view returns (uint256)",
   "function totalCost(uint256) view returns (uint256)",
   "function list(address,uint256,uint256,uint256,address) returns (uint256)",
@@ -389,6 +391,26 @@ function getArtist(addr){
   return DEFAULT_ARTIST;
 }
 
+// ETH/USD price from Chainlink on Polygon (refreshed daily)
+var ETH_USD_FEED = "0xF9680D99D6C9589e2a93a78A04A279e509205945";
+var FEED_ABI = ["function latestRoundData() view returns (uint80,int256,uint256,uint256,uint80)"];
+var ethUsdPrice = 2000; // default fallback
+var ETH_PRICE_CACHE_KEY = "mft_eth_usd";
+
+async function loadEthPrice(){
+  // Check cache (24h TTL)
+  try{
+    var c=JSON.parse(localStorage.getItem(ETH_PRICE_CACHE_KEY));
+    if(c&&Date.now()-c.ts<24*60*60*1000){ethUsdPrice=c.price;console.log("[MKT] ETH/USD cached:",ethUsdPrice);return}
+  }catch(e){}
+  try{
+    var feed=new ethers.Contract(ETH_USD_FEED,FEED_ABI,polyRpc);
+    var r=await feed.latestRoundData();
+    var p=Number(r[1])/1e8;
+    if(p>100&&p<100000){ethUsdPrice=p;localStorage.setItem(ETH_PRICE_CACHE_KEY,JSON.stringify({ts:Date.now(),price:p}));console.log("[MKT] ETH/USD live:",p)}
+  }catch(e){console.warn("[MKT] ETH price fetch failed, using",ethUsdPrice)}
+}
+
 var rpc = new ethers.JsonRpcProvider("https://mainnet.base.org");
 var signer=null, me=null, items=[], sellNft=null, metaCache={}, walletLoaded=false, ownedLoaded=false, chainSwitching=false;
 
@@ -397,7 +419,12 @@ var CATALOG_CACHE_KEY = "mft_catalog_v2";
 var CATALOG_CACHE_TTL = 48*60*60*1000; // 48h
 var HIDE_FROM_MARKET = ["0xcb8c8a116ac3e12d861c1b4bd0d859aceda25d3f"]; // MycoVault
 var HIDE_NAMES = ["vombatidae","veggie parfait"]; // hide by metadata name (lowercase match)
-var SINGLE_TOKEN = ["0x5b5a2bcfd8b19814bcb6be9091a892ff0ceb23c6"]; // Future Funder Ambrose — show as 1 collection
+var SINGLE_TOKEN = [
+  "0x5b5a2bcfd8b19814bcb6be9091a892ff0ceb23c6", // Future Funder Ambrose
+  "0xaf92bc25a44bf43ec4100cad6ea3620523c7dace", // Wolves
+  "0x234b58ecdb0026b2aaf829cc46e91895f609f6d1", // Guards of Kardov's Gate
+  "0xa8a51d236a7af87d82fe2b29249b0ad70ba91d1a"  // Rats
+];
 
 function getCachedCatalog(){
   try{var raw=localStorage.getItem(CATALOG_CACHE_KEY);if(!raw)return null;return JSON.parse(raw)}catch(e){return null}
@@ -457,10 +484,10 @@ async function loadBackingFromGameApi(){
   }catch(e){console.warn("[MKT] Game API fetch failed:",e);return false}
 }
 
-// Tier 1: Supabase nft_d20_stats (pre-computed by daily cron, includes ALL LP pairs)
+// Tier 1: Supabase nft_backing (chain-data-only, pre-computed by daily cron, includes ALL LP pairs)
 async function loadBackingFromDb(){
   try{
-    var r=await fetch(SUPABASE_URL+"/rest/v1/nft_d20_stats?select=key,data&key=neq.__summary__",{headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY}});
+    var r=await fetch(SUPABASE_URL+"/rest/v1/nft_backing?select=key,data&key=neq.__summary__",{headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY}});
     if(!r.ok)return false;
     var rows=await r.json();
     if(!rows.length)return false;
@@ -508,6 +535,8 @@ async function getLpValueOnChain(nftAddr){
 
 // Master loader: Game API → Supabase → on-chain → localStorage, with zero-protection
 async function loadAllBacking(){
+  // Load live ETH/USD price
+  await loadEthPrice();
   // Try localStorage cache immediately
   var cached=getCachedBacking();
   if(cached&&cached.map){
@@ -1073,8 +1102,14 @@ function renderCatalogCard(entry,g){
     '<div class="chain-badge '+chainCls+'">'+esc(entry.chain)+'</div></div>'+
     '<div class="card-body"><div class="card-collection">'+esc(entry.dbName)+'</div>'+
     '<div class="card-title">'+esc(m.name||entry.dbName)+'</div>'+
-    (li?'<div class="card-row"><div class="card-price">'+fmt(li.price)+' <small>'+(li.chain==="polygon"?"WETH":"AZOS")+'</small></div>'+
-      (li.amt>1?'<div class="card-qty">x'+li.amt+'</div>':'')+'</div>':
+    (li?(function(){
+      var lp=parseFloat(getBackingUsd(li.nft)||"0");
+      var lf=li.chain==="polygon"?(lp>0?lp/ethUsdPrice:0):lp;
+      var ep=Math.max(parseFloat(ethers.formatUnits(li.price,18)),lf);
+      var ps=li.chain==="polygon"?ep.toFixed(4):ep.toFixed(2);
+      var tk=li.chain==="polygon"?"WETH":"AZOS";
+      return'<div class="card-row"><div class="card-price">'+ps+' <small>'+tk+'</small></div>'+(li.amt>1?'<div class="card-qty">x'+li.amt+'</div>':'')+'</div>';
+    })():
       '<div class="card-row">'+(valHtml||'<div style="font-size:12px;color:#554d40;">Not listed</div>')+'</div>')+
     (li&&valHtml?'<div class="card-row" style="margin-top:2px;">'+valHtml+'</div>':'')+
     '</div>'+
@@ -1099,16 +1134,36 @@ function openBuy(li,entry){
   $("bSeller").innerText=short(li.seller);
   $("bTid").innerText=li.tid;
   $("bArtist").innerText=short(li.artist);
-  $("bPrice").innerHTML=fmt(li.price)+' <small>'+tok+'</small>';
+  // Show effective price: max(listed, LP floor from DB)
+  var listedP=parseFloat(ethers.formatUnits(li.price,18));
+  var lpUsdVal=parseFloat(getBackingUsd(li.nft)||"0");
+  var lpFloor=ch==="polygon"?(lpUsdVal>0?lpUsdVal/ethUsdPrice:0):lpUsdVal;
+  var effectiveP=Math.max(listedP,lpFloor);
+  var priceUp=effectiveP>listedP;
+  if(priceUp){
+    $("bPrice").innerHTML=fmt(li.price)+' <s style="color:#554d40;font-size:13px;">listed</s> &rarr; '+(ch==="polygon"?effectiveP.toFixed(4):effectiveP.toFixed(2))+' <small>'+tok+'</small> <span style="color:#60a5fa;font-size:11px;">(LP floor)</span>';
+  } else {
+    $("bPrice").innerHTML=fmt(li.price)+' <small>'+tok+'</small>';
+  }
   $("bLpValue").innerText=entry&&entry.lpUsd&&entry.lpUsd!=="0.00"?fmtUsd(entry.lpUsd):"\u2014";
-  var p=parseFloat(ethers.formatUnits(li.price,18));
-  $("feeNft").innerText=fmtUsd((p*0.5).toFixed(2));
-  $("feeArtist").innerText=fmtUsd((p*0.2).toFixed(2));
-  $("feeCom").innerText=fmtUsd((p*0.3).toFixed(2));
+  var p=effectiveP;
+  if(ch==="polygon"){
+    var d=4;
+    $("feeNft").innerText=(p*0.5).toFixed(d)+" WETH";
+    $("feeArtist").innerText=(p*0.2).toFixed(d)+" WETH";
+    $("feeCom").innerText=(p*0.3).toFixed(d)+" WETH";
+  } else {
+    $("feeNft").innerText=fmtUsd((p*0.5).toFixed(2));
+    $("feeArtist").innerText=fmtUsd((p*0.2).toFixed(2));
+    $("feeCom").innerText=fmtUsd((p*0.3).toFixed(2));
+  }
+  var isSolo=SINGLE_TOKEN.indexOf(li.nft.toLowerCase())!==-1;
+  $("bSharedNote").style.display=isSolo?"none":"block";
   var isMe=me&&li.seller.toLowerCase()===me.toLowerCase();
+  var buyPrice=ch==="polygon"?effectiveP.toFixed(4):effectiveP.toFixed(2);
   $("bActions").innerHTML=isMe
     ?'<button class="btn btn-red" style="width:100%;padding:12px;" onclick="doCancel('+li.id+',\''+ch+'\')">Cancel Listing</button>'
-    :'<button class="btn btn-green" id="buyBtn" style="width:100%;padding:14px;font-size:15px;" onclick="doBuy('+li.id+',\''+ch+'\')">Buy for '+fmt(li.price)+' '+tok+'</button>';
+    :'<button class="btn btn-green" id="buyBtn" style="width:100%;padding:14px;font-size:15px;" onclick="doBuy('+li.id+',\''+ch+'\')">Buy for '+buyPrice+' '+tok+'</button>';
   $("buyOv").classList.add("on");
 }
 
@@ -1126,6 +1181,8 @@ function openPreview(entry){
   $("bLpValue").innerText=entry.lpUsd&&entry.lpUsd!=="0.00"?fmtUsd(entry.lpUsd):"\u2014";
   $("bPrice").innerHTML='<span style="color:#554d40;font-size:16px;">Not listed for sale</span>';
   $("feeNft").innerText="\u2014";$("feeArtist").innerText="\u2014";$("feeCom").innerText="\u2014";
+  var isSolo=SINGLE_TOKEN.indexOf(entry.addr.toLowerCase())!==-1;
+  $("bSharedNote").style.display=isSolo?"none":"block";
   var chainNote="This NFT is not currently listed for sale.";
   $("bActions").innerHTML='<div style="text-align:center;padding:10px;color:#776a50;font-size:13px;">'+chainNote+'</div>';
   $("buyOv").classList.add("on");
@@ -1167,21 +1224,32 @@ async function doCancel(id,chain){
 }
 
 // ── Sell Modal ──
-function openSell(addr,tid,bal,m,colName,chain){
+async function openSell(addr,tid,bal,m,colName,chain){
   var ch=chain||"base";
-  sellNft={addr,tid,bal,chain:ch};
   var tok=ch==="polygon"?"WETH":"AZOS";
+  var lpUsd=parseFloat(getBackingUsd(addr)||"0");
+  var floor,prefill;
+  if(ch==="polygon"){
+    var wethVal=lpUsd>0?lpUsd/ethUsdPrice:0;
+    floor=Math.max(wethVal,0.0025);
+    prefill=floor.toFixed(4);
+  } else {
+    floor=Math.max(lpUsd,5);
+    prefill=floor.toFixed(2);
+  }
+  sellNft={addr,tid,bal,chain:ch,floor:floor};
   $("sImg").src=m.image||PH;$("sImg").onerror=function(){this.src=PH};
   $("sCollection").innerText=colName||short(addr);
   $("sName").innerText=m.name||"#"+tid;
   $("sCol").innerText=ch.toUpperCase()+" · Token #"+tid+" · "+short(addr);
   $("sBal").innerText="You own: "+bal;
   var artistAddr=getArtist(addr);
-  $("sAmt").value="1";$("sPrice").value="";$("sArtist").value=artistAddr;
+  $("sAmt").value="1";$("sPrice").value=prefill;$("sArtist").value=artistAddr;
   $("sArtist").readOnly=!!artistAddr;
   $("sArtist").style.opacity=artistAddr?"0.6":"1";
   $("sPriceLabel").innerText="Price ("+tok+")";
-  $("sPriceHint").innerText=ch==="polygon"?"Minimum 0.0025 WETH (~$5)":"Minimum $5 AZOS";
+  var floorLabel=ch==="polygon"?floor.toFixed(4)+" WETH":floor.toFixed(2)+" AZOS";
+  $("sPriceHint").innerText="LP floor: "+floorLabel+" (~$"+lpUsd.toFixed(2)+") — you can set higher";
   $("st1").className="step";$("st2").className="step";$("st3").className="step";
   $("sSub").disabled=false;$("sSub").innerText="List for Sale";
   $("sellOv").classList.add("on");
@@ -1195,8 +1263,13 @@ async function doSell(){
   if(!amt||!price||!artist){toast("Fill in all fields","err");return}
   if(Number(amt)>sellNft.bal){toast("You only own "+sellNft.bal,"err");return}
   var pw;try{pw=ethers.parseUnits(price,18)}catch(e){toast("Invalid price","err");return}
-  if(ch==="base"&&pw<ethers.parseUnits("5",18)){toast("Minimum price is 5 AZOS","err");return}
-  if(ch==="polygon"&&pw<ethers.parseUnits("0.0025",18)){toast("Minimum price is 0.0025 WETH (~$5)","err");return}
+  var floor=sellNft.floor||0;
+  var floorWei=ethers.parseUnits(floor.toFixed(18),18);
+  if(pw<floorWei){
+    var tok=ch==="polygon"?"WETH":"AZOS";
+    var floorStr=ch==="polygon"?floor.toFixed(4):floor.toFixed(2);
+    toast("Price can't be below LP floor of "+floorStr+" "+tok,"err");return
+  }
   if(!ethers.isAddress(artist)){toast("Invalid artist wallet address","err");return}
 
   var mktAddr=ch==="polygon"?MKT_POLY:MKT;
@@ -1285,7 +1358,7 @@ async function getMeta(addr,tid){return getMetaChain(addr,tid,"base")}
 function $(id){return document.getElementById(id)}
 function mk(tag,cls){var e=document.createElement(tag);e.className=cls;return e}
 function short(a){return a?a.slice(0,6)+"..."+a.slice(-4):""}
-function fmt(wei){return parseFloat(ethers.formatUnits(wei,18)).toFixed(2)}
+function fmt(wei){var n=parseFloat(ethers.formatUnits(wei,18));return n<1?n.toFixed(4):n.toFixed(2)}
 function fmtD(n){return n.toFixed(2)}
 function esc(s){var d=document.createElement("div");d.appendChild(document.createTextNode(s||""));return d.innerHTML}
 function toast(msg,type){var t=$("toast");t.innerText=msg;t.className="t-"+(type||"info")+" on";clearTimeout(t._t);t._t=setTimeout(function(){t.className=""},4000)}
