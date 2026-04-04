@@ -240,7 +240,7 @@
     <div class="bal-pill" id="bal"></div>
     <div class="addr-pill" id="addr"></div>
     <button class="btn btn-outline" onclick="shareLink()" title="Copy link to clipboard">Share</button>
-    <button class="btn btn-gold" id="cBtn" onclick="connect()">Connect Wallet</button>
+    <button class="btn btn-gold" id="cBtn" onclick="showConnectModal()">Connect Wallet</button>
   </div>
 </header>
 
@@ -442,6 +442,24 @@
   </div>
 </div>
 
+<!-- Connect Modal -->
+<div class="overlay" id="connectOv" onclick="if(event.target===this)closeConnectModal()">
+  <div class="modal" style="max-width:340px;">
+    <button class="modal-close" onclick="closeConnectModal()">&times;</button>
+    <div class="modal-body" style="padding:30px 24px;">
+      <h3 style="text-align:center;color:#c9a84c;margin-bottom:6px;font-size:18px;">Connect Wallet</h3>
+      <p style="text-align:center;color:#776a50;font-size:12px;margin-bottom:24px;">Choose how to connect</p>
+      <button onclick="connectBrowser()" class="btn" style="width:100%;padding:16px;font-size:14px;background:#13100f;border:1px solid #c9a84c33;color:#e8d5b0;margin-bottom:10px;display:flex;align-items:center;gap:12px;justify-content:center;">
+        <span style="font-size:20px;">&#129418;</span> Browser Wallet
+      </button>
+      <button onclick="connectWC()" id="wcBtn" class="btn" style="width:100%;padding:16px;font-size:14px;background:#13100f;border:1px solid #3b99fc44;color:#3b99fc;display:flex;align-items:center;gap:12px;justify-content:center;">
+        <span style="font-size:20px;">&#128279;</span> WalletConnect
+      </button>
+      <p id="wcStatus" style="text-align:center;color:#776a50;font-size:11px;margin-top:12px;"></p>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -509,6 +527,8 @@ async function loadEthPrice(){
 
 var rpc = new ethers.JsonRpcProvider("https://mainnet.base.org");
 var signer=null, me=null, items=[], sellNft=null, metaCache={}, walletLoaded=false, ownedLoaded=false, chainSwitching=false;
+var walletProvider=null; // EIP-1193 provider (window.ethereum or WalletConnect)
+var WC_PROJECT_ID="b1e4e20306d7c48c0a10c68568e49b52"; // Replace with your own from cloud.reown.com
 
 // ── Cache keys ──
 var CATALOG_CACHE_KEY = "mft_catalog_v2";
@@ -1057,29 +1077,72 @@ function shareLink(){
 }
 
 // ── Wallet ──
-async function connect() {
-  if (!window.ethereum){toast("Install MetaMask or a Web3 wallet","err");return}
-  try {
+function showConnectModal(){
+  if(me){return} // already connected
+  $("connectOv").className="overlay on";
+  $("wcStatus").textContent="";
+}
+function closeConnectModal(){$("connectOv").className="overlay"}
+
+async function finishConnect(provider){
+  walletProvider=provider;
+  var p=new ethers.BrowserProvider(provider);
+  signer=await p.getSigner(); me=await signer.getAddress();
+  $("addr").innerText=short(me); $("addr").style.display="block";
+  $("cBtn").innerText=short(me); $("cBtn").className="btn btn-outline"; $("cBtn").onclick=null;
+  var b=await new ethers.Contract(AZOS,E20,rpc).balanceOf(me);
+  $("bal").innerText=fmt(b)+" AZOS"; $("bal").style.display="block";
+  provider.on("accountsChanged",()=>location.reload());
+  provider.on("chainChanged",()=>{if(!chainSwitching)location.reload()});
+  closeConnectModal();
+  loadBrowse(); loadWallet();
+}
+
+async function connectBrowser(){
+  if(!window.ethereum){toast("No browser wallet found","err");return}
+  try{
     await ethereum.request({method:"eth_requestAccounts"});
     try{await ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x2105"}]})}catch(e){}
-    var p=new ethers.BrowserProvider(ethereum);
-    signer=await p.getSigner(); me=await signer.getAddress();
-    $("addr").innerText=short(me); $("addr").style.display="block";
-    $("cBtn").innerText=short(me); $("cBtn").className="btn btn-outline";
-    var b=await new ethers.Contract(AZOS,E20,rpc).balanceOf(me);
-    $("bal").innerText=fmt(b)+" AZOS"; $("bal").style.display="block";
-    ethereum.on("accountsChanged",()=>location.reload());
-    ethereum.on("chainChanged",()=>{if(!chainSwitching)location.reload()});
-    loadBrowse(); loadWallet();
-  } catch(e){toast(e.message,"err")}
+    await finishConnect(window.ethereum);
+  }catch(e){toast(e.message,"err")}
+}
+
+async function connectWC(){
+  var st=$("wcStatus");
+  st.textContent="Loading WalletConnect...";st.style.color="#3b99fc";
+  try{
+    var mod=await import("https://esm.sh/@walletconnect/ethereum-provider@2.17.3");
+    var EthereumProvider=mod.EthereumProvider;
+    st.textContent="Opening QR code...";
+    var wc=await EthereumProvider.init({
+      projectId:WC_PROJECT_ID,
+      chains:[137],
+      optionalChains:[8453,137],
+      showQrModal:true,
+      metadata:{name:"ToT Marketplace",description:"Tales of Tasern NFT Marketplace",url:location.origin,icons:[]}
+    });
+    await wc.enable();
+    st.textContent="Connected!";st.style.color="#22c55e";
+    await finishConnect(wc);
+    toast("Connected via WalletConnect!","ok");
+  }catch(e){
+    st.textContent=e.message;st.style.color="#dc2626";
+    console.error("WC error:",e);
+  }
+}
+
+// Backward compat: connect() for auto-reconnect on page load
+async function connect(){
+  if(window.ethereum){try{await connectBrowser()}catch(e){}}
 }
 
 async function ensureChain(chain){
   var id=chain==="polygon"?"0x89":"0x2105";
+  var prov=walletProvider||window.ethereum;
   chainSwitching=true;
-  try{await ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:id}]})}
+  try{await prov.request({method:"wallet_switchEthereumChain",params:[{chainId:id}]})}
   catch(e){chainSwitching=false;throw new Error("Please switch to "+(chain==="polygon"?"Polygon":"Base")+" network")}
-  var p=new ethers.BrowserProvider(ethereum);signer=await p.getSigner();
+  var p=new ethers.BrowserProvider(prov);signer=await p.getSigner();
   setTimeout(function(){chainSwitching=false},2000);
 }
 
@@ -1656,18 +1719,15 @@ function getPuTarget(){
 async function puApprove(){
   var st=$("puStatus");
   try{
-    if(!me){await connect();if(!me)return}
+    if(!me){showConnectModal();return}
     var target=getPuTarget();
     if(!target){st.textContent="Pick a collection or paste an address";return}
     var amt=$("puAmt").value.trim();
     var wei=ethers.parseEther(amt);
-    // Switch to Polygon
-    try{await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x89"}]})}catch(e){}
-    var p=new ethers.BrowserProvider(window.ethereum);
-    var sig=await p.getSigner();
+    await ensureChain("polygon");
     st.textContent="Approving "+amt+" WETH for PowerUp contract...";
     st.style.color="#c9a84c";
-    var weth=new ethers.Contract(WETH_POLY,E20,sig);
+    var weth=new ethers.Contract(WETH_POLY,E20,signer);
     var tx=await weth.approve(POWERUP_POLY,wei);
     st.textContent="Waiting for approval...";
     await tx.wait();
@@ -1683,18 +1743,15 @@ async function puApprove(){
 async function puExecute(){
   var st=$("puStatus");
   try{
-    if(!me){await connect();if(!me)return}
+    if(!me){showConnectModal();return}
     var target=getPuTarget();
     if(!target){st.textContent="Pick a collection or paste an address";return}
     var amt=$("puAmt").value.trim();
     var wei=ethers.parseEther(amt);
-    // Switch to Polygon
-    try{await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x89"}]})}catch(e){}
-    var p=new ethers.BrowserProvider(window.ethereum);
-    var sig=await p.getSigner();
+    await ensureChain("polygon");
     st.textContent="Powering up "+target.slice(0,10)+"... with "+amt+" WETH";
     st.style.color="#c9a84c";
-    var c=new ethers.Contract(POWERUP_POLY,POWERUP_ABI,sig);
+    var c=new ethers.Contract(POWERUP_POLY,POWERUP_ABI,signer);
     var tx=await c.powerUp(target,wei);
     st.textContent="Waiting for confirmation...";
     var receipt=await tx.wait();
@@ -1724,7 +1781,7 @@ async function puExecute(){
 // ── Init ──
 loadKnownNfts().then(function(){loadBrowse()});
 loadEthPrice();
-if(window.ethereum&&ethereum.selectedAddress)connect();
+if(window.ethereum&&ethereum.selectedAddress){walletProvider=window.ethereum;connect()}
 </script>
 </body>
 </html>
