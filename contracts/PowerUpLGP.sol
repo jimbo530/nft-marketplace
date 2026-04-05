@@ -13,29 +13,29 @@ interface IERC20 {
     function transferFrom(address, address, uint) external returns (bool);
 }
 
-/// @title NFT Power-Up (Polygon) — WETH → IGS/PR25 LP → NFT
-/// @notice Buys IGS + PR25, creates LP, sends to NFT contract to boost backing
-contract PowerUpPoly {
+/// @title NFT Power-Up (LGP) — WETH -> LGP/PR25 LP -> NFT
+/// @notice Buys LGP + PR25, creates LP, sends to NFT contract to boost backing
+contract PowerUpLGP {
     IRouter public constant router = IRouter(0xedf6066a2b290C185783862C7F4776A2C8077AD1);
     address public constant WETH   = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619;
-    address public constant IGS    = 0xE302672798D12e7F68c783dB2c2d5E6B48ccf3ce;
+    address public constant LGP    = 0xdDc330761761751e005333208889bfe36C6E6760;
     address public constant PR25   = 0x72E4327F592E9Cb09d5730a55D1D68De144aF53C;
 
     event PoweredUp(address indexed user, address indexed nftContract, uint wethSpent, uint lpCreated);
 
-    /// @notice Spend WETH to create IGS/PR25 LP and send it to an NFT contract
+    /// @notice Spend WETH to create LGP/PR25 LP and send it to an NFT contract
     function powerUp(address nftContract, uint wethAmount) external {
         require(wethAmount > 0, "Zero amount");
         IERC20(WETH).transferFrom(msg.sender, address(this), wethAmount);
 
         uint half = wethAmount / 2;
-        _swapWethTo(IGS, half);
+        _swapWethTo(LGP, half);
         _swapWethTo(PR25, wethAmount - half);
 
         uint lpCreated = _addLpAndSend(nftContract);
 
         _refund(WETH);
-        _refund(IGS);
+        _refund(LGP);
         _refund(PR25);
 
         emit PoweredUp(msg.sender, nftContract, wethAmount, lpCreated);
@@ -58,11 +58,11 @@ contract PowerUpPoly {
     }
 
     function _addLpAndSend(address to) internal returns (uint liquidity) {
-        uint balIgs  = IERC20(IGS).balanceOf(address(this));
+        uint balLgp  = IERC20(LGP).balanceOf(address(this));
         uint balPr25 = IERC20(PR25).balanceOf(address(this));
-        IERC20(IGS).approve(address(router), balIgs);
+        IERC20(LGP).approve(address(router), balLgp);
         IERC20(PR25).approve(address(router), balPr25);
-        (,, liquidity) = router.addLiquidity(IGS, PR25, balIgs, balPr25, 0, 0, to, block.timestamp + 300);
+        (,, liquidity) = router.addLiquidity(LGP, PR25, balLgp, balPr25, 0, 0, to, block.timestamp + 300);
     }
 
     function _refund(address token) internal {

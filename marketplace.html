@@ -357,6 +357,7 @@
       <button class="filter-btn on" onclick="filterCatalog('all')">All</button>
       <button class="filter-btn" onclick="filterCatalog('base')">Base</button>
       <button class="filter-btn" onclick="filterCatalog('polygon')">Polygon</button>
+      <input type="text" id="catSearchInput" placeholder="Search by name or contract..." oninput="catSearch=this.value.toLowerCase();renderCatalog()" style="margin-left:auto;padding:6px 12px;border-radius:8px;border:1px solid #333;background:#1a1a2e;color:#e0e0e0;font-size:14px;width:240px;outline:none;">
     </div>
     <div class="loader" id="catLoad" style="display:none"><div class="spin"></div><br>Loading NFT catalog...</div>
     <div class="empty" id="catNone" style="display:none"><h3>No NFTs found</h3></div>
@@ -779,15 +780,9 @@
         <div class="field"><label>Amount</label><input id="sAmt" type="text" value="1" /></div>
         <div class="field"><label id="sPriceLabel">Price (AZOS)</label><input id="sPrice" placeholder="5.00" /><div class="hint" id="sPriceHint">Minimum $5 AZOS</div></div>
       </div>
+      <div class="field" id="sNationWrap" style="display:none;"><label>Nation Market</label><select id="sNation" style="width:100%;padding:10px;background:#1a1418;color:#e8d5b0;border:1px solid #c9a84c33;border-radius:6px;font-size:14px;"></select><div class="hint">Choose which nation's LP pair to build</div></div>
       <div class="field"><label>Artist Wallet</label><input id="sArtist" placeholder="0x... creator address" /><div class="hint">Receives 20% royalty on every sale</div></div>
-      <div class="fee-split">
-        <div style="text-align:center;padding:2px 0 6px;margin-bottom:4px;border-bottom:1px solid #22c55e22;font-size:12px;font-weight:700;color:#22c55e;">40% creates LP tokens</div>
-        <div><span>To you (seller)</span><span class="pct">50%</span></div>
-        <div><span>LP locked in NFT (permanent stat boost)</span><span class="pct">25%</span></div>
-        <div><span>LP to community power-ups</span><span class="pct">15%</span></div>
-        <div><span>Artist royalty</span><span class="pct">10%</span></div>
-        <div style="border-top:1px solid #c9a84c15;margin-top:4px;padding-top:4px;"><span>Platform fee</span><span class="pct" style="color:#22c55e;">None</span></div>
-      </div>
+      <div class="fee-split" id="feeSplit"></div>
       <button class="btn btn-green" id="sSub" onclick="doSell()" style="width:100%;padding:14px;font-size:15px;">List for Sale</button>
     </div>
   </div>
@@ -1511,7 +1506,7 @@ function tab(id) {
 // ── Browse — active listings only ──
 var catalog=[];
 var catalogLoaded=false;
-var catFilter="all";
+var catFilter="all",catSearch="";
 
 async function loadBrowse() {
   var g=$("browseGrid"),ld=$("browseLoad"),no=$("browseNone"),hd=$("browseHead");
@@ -1533,15 +1528,18 @@ async function loadBrowse() {
       }catch(e){}}
     }catch(e){}
 
-    // Load Polygon marketplace listings
-    try{
-      var cp=new ethers.Contract(MKT_POLY,MABI_POLY,polyRpc);
+    // Load Polygon marketplace listings — current nation only
+    var cn=NATIONS[currentNation],polyMarkets=[];
+    if(cn.market)polyMarkets.push(cn.market);
+    if(cn.primaryMarket)polyMarkets.push(cn.primaryMarket);
+    for(var pm=0;pm<polyMarkets.length;pm++){try{
+      var cp=new ethers.Contract(polyMarkets[pm],MABI_POLY,polyRpc);
       var np=Number(await cp.nextListingId());
       for(var ip=0;ip<np;ip++){try{
         var lp=await cp.listings(ip);if(!lp.active)continue;
-        items.push({id:ip,seller:lp.seller,nft:lp.nftContract,tid:Number(lp.tokenId),amt:Number(lp.amount),price:lp.priceWeth,artist:lp.artistWallet,chain:"polygon"});
+        items.push({id:ip,seller:lp.seller,nft:lp.nftContract,tid:Number(lp.tokenId),amt:Number(lp.amount),price:lp.priceWeth,artist:lp.artistWallet,chain:"polygon",marketAddr:polyMarkets[pm]});
       }catch(e){}}
-    }catch(e){}
+    }catch(e){}}
 
     $("statListed").innerText=items.length;
 
@@ -1715,8 +1713,12 @@ function renderCatalog(){
   var g=$("catGrid");g.innerHTML="";
   var filtered=catalog.filter(function(c){
     if(isHiddenName(c.dbName)||isHiddenName(c.meta&&c.meta.name))return false;
-    if(catFilter==="base")return c.chain==="base";
-    if(catFilter==="polygon")return c.chain==="polygon";
+    if(catFilter==="base"&&c.chain!=="base")return false;
+    if(catFilter==="polygon"&&c.chain!=="polygon")return false;
+    if(catSearch){
+      var n=(c.meta&&c.meta.name||"").toLowerCase(),d=(c.dbName||"").toLowerCase(),a=(c.addr||"").toLowerCase();
+      if(n.indexOf(catSearch)===-1&&d.indexOf(catSearch)===-1&&a.indexOf(catSearch)===-1)return false;
+    }
     return true;
   });
   var totalVal=0;
@@ -1823,8 +1825,8 @@ function openBuy(li,entry){
   var isMe=me&&li.seller.toLowerCase()===me.toLowerCase();
   var buyPrice=ch==="polygon"?effectiveP.toFixed(4):effectiveP.toFixed(2);
   $("bActions").innerHTML=isMe
-    ?'<button class="btn btn-red" style="width:100%;padding:12px;" onclick="doCancel('+li.id+',\''+ch+'\')">Cancel Listing</button>'
-    :'<button class="btn btn-green" id="buyBtn" style="width:100%;padding:14px;font-size:15px;" onclick="doBuy('+li.id+',\''+ch+'\')">Buy for '+buyPrice+' '+tok+'</button>';
+    ?'<button class="btn btn-red" style="width:100%;padding:12px;" onclick="doCancel('+li.id+',\''+ch+'\',\''+(li.marketAddr||'')+'\')">Cancel Listing</button>'
+    :'<button class="btn btn-green" id="buyBtn" style="width:100%;padding:14px;font-size:15px;" onclick="doBuy('+li.id+',\''+ch+'\',\''+(li.marketAddr||'')+'\')">Buy for '+buyPrice+' '+tok+'</button>';
   $("buyOv").classList.add("on");
 }
 
@@ -1850,18 +1852,19 @@ function openPreview(entry){
 }
 function closeBuy(){$("buyOv").classList.remove("on")}
 
-async function doBuy(id,chain){
+async function doBuy(id,chain,mktAddr){
   var b=$("buyBtn");b.disabled=true;
   try{
     var ch=chain||"base";
     await ensureChain(ch);
     if(ch==="polygon"){
+      var polyMkt=mktAddr||MKT_POLY;
       var weth=new ethers.Contract(WETH_POLY,E20,signer);
-      var tc=await new ethers.Contract(MKT_POLY,MABI_POLY,polyRpc).totalCost(id);
-      var allow=await weth.allowance(me,MKT_POLY);
-      if(allow<tc){b.innerText="Approving WETH...";toast("Approve WETH spend in wallet...","info");var t1=await weth.approve(MKT_POLY,tc);await t1.wait()}
+      var tc=await new ethers.Contract(polyMkt,MABI_POLY,polyRpc).totalCost(id);
+      var allow=await weth.allowance(me,polyMkt);
+      if(allow<tc){b.innerText="Approving WETH...";toast("Approve WETH spend in wallet...","info");var t1=await weth.approve(polyMkt,tc);await t1.wait()}
       b.innerText="Buying...";toast("Confirm purchase in wallet...","info");
-      var mkt=new ethers.Contract(MKT_POLY,MABI_POLY,signer);var t2=await mkt.buy(id);await t2.wait();
+      var mkt=new ethers.Contract(polyMkt,MABI_POLY,signer);var t2=await mkt.buy(id);await t2.wait();
     } else {
       var azos=new ethers.Contract(AZOS,E20,signer);
       var tc=await new ethers.Contract(MKT,MABI,rpc).totalCost(id);
@@ -1876,10 +1879,10 @@ async function doBuy(id,chain){
   }catch(e){toast("Buy failed: "+(e.reason||e.shortMessage||e.message),"err");b.disabled=false;b.innerText="Buy"}
 }
 
-async function doCancel(id,chain){
+async function doCancel(id,chain,mktOverride){
   try{
     var ch=chain||"base";await ensureChain(ch);
-    var mktAddr=ch==="polygon"?MKT_POLY:MKT;var mktAbi=ch==="polygon"?MABI_POLY:MABI;
+    var mktAddr=mktOverride||(ch==="polygon"?MKT_POLY:MKT);var mktAbi=ch==="polygon"?MABI_POLY:MABI;
     toast("Confirm cancel in wallet...","info");var mkt=new ethers.Contract(mktAddr,mktAbi,signer);var tx=await mkt.cancel(id);await tx.wait();toast("Cancelled!","ok");closeBuy();loadBrowse()
   }catch(e){toast("Cancel failed: "+(e.reason||e.message),"err")}
 }
@@ -1912,7 +1915,30 @@ async function openSell(addr,tid,bal,m,colName,chain){
   var floorLabel=ch==="polygon"?floor.toFixed(4)+" WETH":floor.toFixed(2)+" AZOS";
   $("sPriceHint").innerText="LP floor: "+floorLabel+" (~$"+lpUsd.toFixed(2)+") — you can set higher";
   $("st1").className="step";$("st2").className="step";$("st3").className="step";
+  // Show correct fee split
+  var isCommunity=me&&me.toLowerCase()==="0x0780b1456d5e60cf26c8cd6541b85e805c8c05f2";
+  if(isCommunity&&ch==="polygon"){
+    $("feeSplit").innerHTML='<div style="text-align:center;padding:2px 0 6px;margin-bottom:4px;border-bottom:1px solid #22c55e22;font-size:12px;font-weight:700;color:#22c55e;">80% creates LP tokens</div>'+
+      '<div><span>LP locked in NFT (permanent stat boost)</span><span class="pct">50%</span></div>'+
+      '<div><span>LP to community power-ups</span><span class="pct">30%</span></div>'+
+      '<div><span>Artist royalty (WETH)</span><span class="pct">20%</span></div>'+
+      '<div style="border-top:1px solid #c9a84c15;margin-top:4px;padding-top:4px;"><span>To seller</span><span class="pct" style="color:#22c55e;">0%</span></div>'+
+      '<div><span>Platform fee</span><span class="pct" style="color:#22c55e;">None</span></div>';
+  } else {
+    $("feeSplit").innerHTML='<div style="text-align:center;padding:2px 0 6px;margin-bottom:4px;border-bottom:1px solid #22c55e22;font-size:12px;font-weight:700;color:#22c55e;">40% creates LP tokens</div>'+
+      '<div><span>To you (seller)</span><span class="pct">50%</span></div>'+
+      '<div><span>LP locked in NFT (permanent stat boost)</span><span class="pct">25%</span></div>'+
+      '<div><span>LP to community power-ups</span><span class="pct">15%</span></div>'+
+      '<div><span>Artist royalty</span><span class="pct">10%</span></div>'+
+      '<div style="border-top:1px solid #c9a84c15;margin-top:4px;padding-top:4px;"><span>Platform fee</span><span class="pct" style="color:#22c55e;">None</span></div>';
+  }
   $("sSub").disabled=false;$("sSub").innerText="List for Sale";
+  // Show nation selector for Polygon NFTs
+  if(ch==="polygon"){
+    var sel=$("sNation");sel.innerHTML="";
+    for(var nk in NATIONS){var nn=NATIONS[nk];if(nn.market||nn.primaryMarket){var o=document.createElement("option");o.value=nk;o.textContent=nn.label+" ("+nn.tokenA+"/"+nn.tokenB+")";if(nk===currentNation)o.selected=true;sel.appendChild(o)}}
+    $("sNationWrap").style.display="block";
+  } else { $("sNationWrap").style.display="none"; }
   $("sellOv").classList.add("on");
 }
 function closeSell(){$("sellOv").classList.remove("on")}
@@ -1932,8 +1958,13 @@ async function doSell(){
     toast("Price can't be below LP floor of "+floorStr+" "+tok,"err");return
   }
   if(!ethers.isAddress(artist)){toast("Invalid artist wallet address","err");return}
+  var isApproved=false;for(var ki=0;ki<knownNfts.length;ki++){if(knownNfts[ki].contract_address.toLowerCase()===sellNft.addr.toLowerCase()){isApproved=true;break}}
+  if(!isApproved){toast("This collection is not approved for listing","err");return}
 
-  var mktAddr=ch==="polygon"?MKT_POLY:MKT;
+  var sellNation=ch==="polygon"?$("sNation").value:currentNation;
+  var n=NATIONS[sellNation];
+  var isPrimary=me&&me.toLowerCase()==="0x0780b1456d5e60cf26c8cd6541b85e805c8c05f2"&&ch==="polygon"&&n&&n.primaryMarket;
+  var mktAddr=isPrimary?n.primaryMarket:(n&&n.market)?n.market:(ch==="polygon"?MKT_POLY:MKT);
   var mktAbi=ch==="polygon"?MABI_POLY:MABI;
   var chainRpc=ch==="polygon"?polyRpc:rpc;
   var btn=$("sSub");btn.disabled=true;
@@ -1982,33 +2013,36 @@ async function loadMyListings(){
       rows.appendChild(r);
     }catch(e){}}
     }catch(e){}
-    // Polygon listings (current contract)
-    try{
-    var cp=new ethers.Contract(MKT_POLY,MABI_POLY,polyRpc);var np=Number(await cp.nextListingId());
+    // Polygon listings — all nation market contracts
+    var polyMkts=[MKT_POLY];
+    for(var nk2 in NATIONS){if(NATIONS[nk2].market&&polyMkts.indexOf(NATIONS[nk2].market)===-1)polyMkts.push(NATIONS[nk2].market);if(NATIONS[nk2].primaryMarket&&polyMkts.indexOf(NATIONS[nk2].primaryMarket)===-1)polyMkts.push(NATIONS[nk2].primaryMarket)}
+    for(var pm2=0;pm2<polyMkts.length;pm2++){try{
+    var cp=new ethers.Contract(polyMkts[pm2],MABI_POLY,polyRpc);var np=Number(await cp.nextListingId());
     for(var ip=0;ip<np;ip++){try{
       var lp=await cp.listings(ip);if(!lp.active||lp.seller.toLowerCase()!==me.toLowerCase())continue;found++;
       var mp=await getMetaChain(lp.nftContract,Number(lp.tokenId),"polygon").catch(function(){return{name:"#"+Number(lp.tokenId),image:""}});
       var cnp=getCollectionName(lp.nftContract);
+      var nationLabel="",isPrimLabel="";for(var nk3 in NATIONS){var nn3=NATIONS[nk3];if(nn3.market&&nn3.market.toLowerCase()===polyMkts[pm2].toLowerCase()){nationLabel=nn3.label;isPrimLabel="Resale";break}if(nn3.primaryMarket&&nn3.primaryMarket.toLowerCase()===polyMkts[pm2].toLowerCase()){nationLabel=nn3.label;isPrimLabel="Primary";break}}
       var rp=mk("div","listing-row");
       rp.innerHTML='<img src="'+esc(mp.image||"")+'" onerror="this.src=\''+PH+'\'"/>'+
         '<div class="info">'+(cnp?'<div class="collection-name">'+esc(cnp)+'</div>':'')+
         '<h4>'+esc(mp.name||"#"+Number(lp.tokenId))+'</h4><div class="price">'+fmt(lp.priceWeth)+' WETH</div>'+
-        '<div class="meta">POLYGON · Listing #'+ip+' · '+Number(lp.amount)+' edition(s)</div></div>'+
-        '<button class="btn btn-red" onclick="cancelMy('+ip+',\'polygon\',this)">Cancel</button>';
+        '<div class="meta">POLYGON'+(nationLabel?' · '+esc(nationLabel):'')+(isPrimLabel?' · '+isPrimLabel:'')+ ' · Listing #'+ip+' · '+Number(lp.amount)+' edition(s)</div></div>'+
+        '<button class="btn btn-red" onclick="cancelMy('+ip+',\'polygon\',this,\''+polyMkts[pm2]+'\')">Cancel</button>';
       rows.appendChild(rp);
     }catch(e){}}
-    }catch(e){}
+    }catch(e){}}
     // (old Polygon contract removed — all listings cancelled)
     ld.style.display="none";
     if(!found){no.style.display="block";no.innerHTML='<h3>No active listings</h3><p>List NFTs from the "My NFTs" tab.</p>'}
     else{hd.style.display="flex";$("listCount").innerText=found+" listing"+(found>1?"s":"")}
   }catch(e){ld.style.display="none";no.style.display="block"}
 }
-async function cancelMy(id,chain,btn){
+async function cancelMy(id,chain,btn,mktOverride){
   btn.disabled=true;btn.innerText="Cancelling...";
   try{
     var ch=chain||"base";await ensureChain(ch);
-    var mktAddr=ch==="polygon"?MKT_POLY:MKT;var mktAbi=ch==="polygon"?MABI_POLY:MABI;
+    var mktAddr=mktOverride||(ch==="polygon"?MKT_POLY:MKT);var mktAbi=ch==="polygon"?MABI_POLY:MABI;
     var mkt=new ethers.Contract(mktAddr,mktAbi,signer);var tx=await mkt.cancel(id);await tx.wait();toast("Cancelled!","ok");loadMyListings();loadBrowse()
   }catch(e){toast(e.reason||e.message,"err");btn.disabled=false;btn.innerText="Cancel"}
 }
@@ -2028,47 +2062,49 @@ function toast(msg,type){var t=$("toast");t.innerText=msg;t.className="t-"+(type
 // ── Nations ──
 var currentNation="igypt";
 var NATIONS={
-  igypt:{ powerUp:"0x047590925f939cc8d05Aaf42aA1699814ea35691", tokenA:"IGS", tokenB:"PR25", label:"Bazaar of Igypt", accent:"#c9a84c", formBg:"#13100f", formBorder:"#c9a84c12" },
-  elven:{ powerUp:"0x46F927621202A40B50916d046eE68544C5f7068b", tokenA:"EGP", tokenB:"PR25", label:"Elven Emporium", accent:"#a78bfa", formBg:"#0e0a14", formBorder:"#a78bfa12",
+  igypt:{ powerUp:"0xD93D1E1f41CA90a7a1dd53E200Ed73F79868872F", tokenA:"IGS", tokenB:"PR25", label:"Bazaar of Igypt", accent:"#c9a84c", formBg:"#13100f", formBorder:"#c9a84c12", market:"0xAfB5fa3e6fdD198793FE170a46C647aebD160E6e", primaryMarket:"0xa591CbA2413F2e90268583CBD971E17CcB3B8685", marketAbi:MABI_POLY, payToken:WETH_POLY, paySymbol:"WETH" },
+  elven:{ powerUp:"0xd754546c1Dd3294e3e07215Db895CcC1219101AF", tokenA:"EGP", tokenB:"PR25", label:"Elven Emporium", accent:"#a78bfa", formBg:"#0e0a14", formBorder:"#a78bfa12", market:"0x884dcC85cf865f4B3f661B6De8aeeB1Ad03A49cD", primaryMarket:"0x1629483c0fCcAdbbfa58A5367DEcA5a83701Dc65", marketAbi:MABI_POLY, payToken:WETH_POLY, paySymbol:"WETH",
     pairs:[
       { addr:"0x46F927621202A40B50916d046eE68544C5f7068b", label:"EGP / PR25", desc:"INT + INT (children blessed)" },
       { addr:"", label:"EGP / JCGWR (coming soon)", desc:"INT+WIS+DEX + STR (trees planted)" }
     ]
   },
-  frontier:{ powerUp:"0xED34B1764Bbdd48821c27852A4D4f87781837796", tokenA:"BTN", tokenB:"PR25", label:"Magic Grove", accent:"#4ade80", formBg:"#0a120c", formBorder:"#4ade8012" },
-  dwarven:{ powerUp:"0x4c6926eE0781a5af27E77f8eC8911f93373600AA", tokenA:"LGP", tokenB:"PR25", label:"Dwarven Fortress", accent:"#d97706", formBg:"#14100a", formBorder:"#d9770612" },
-  dragon:{ powerUp:"0x1A9F822923A8Db6FB99c238F20eDF1ddADA10300", tokenA:"DHG", tokenB:"PR25", label:"Dragon's Nest", accent:"#ef4444", formBg:"#140a0a", formBorder:"#ef444412" },
-  durgan:{ powerUp:"0xDbCFe64403114F532d738B2Ac1645545900D659b", tokenA:"DDD", tokenB:"PR25", label:"Durgan Dynasty", accent:"#818cf8", formBg:"#0c0c18", formBorder:"#818cf812" },
-  pirate:{ powerUp:"0xDD6BB031CA70f6C6A72952B8F2EDF1B75C6DD4E0", tokenA:"PKT", tokenB:"PR25", label:"Pirate's Cove", accent:"#22d3ee", formBg:"#0a1218", formBorder:"#22d3ee12" },
-  ork:{ powerUp:"0x1AF088aEB78f3c54d6462Dd77D60F881d25b7610", tokenA:"OGC", tokenB:"PR25", label:"Ork Warcamp", accent:"#dc2626", formBg:"#180a0a", formBorder:"#dc262612" }
+  frontier:{ powerUp:"0x94E4C09aF73c36F07459A753A50e4a93291427E5", tokenA:"BTN", tokenB:"PR25", label:"Magic Grove", accent:"#4ade80", formBg:"#0a120c", formBorder:"#4ade8012", market:"0x07c256F83ec19E59E93583daEd13811d448bAe75", primaryMarket:"0x54C5C94C26F4d1a8Bb7bA4214cc8c326EF107918", marketAbi:MABI_POLY, payToken:WETH_POLY, paySymbol:"WETH" },
+  dwarven:{ powerUp:"0xD0160A75e1cC3DEdE02bAd2e144854447d531971", tokenA:"LGP", tokenB:"PR25", label:"Dwarven Fortress", accent:"#d97706", formBg:"#14100a", formBorder:"#d9770612", market:"0x35883900dc8aAFefE09511A96a972dd7510619Bf", primaryMarket:"0xc891dCc1863eFCaB1C3c4D10A07Ca70f115125d1", marketAbi:MABI_POLY, payToken:WETH_POLY, paySymbol:"WETH" },
+  dragon:{ powerUp:"0x1A9F822923A8Db6FB99c238F20eDF1ddADA10300", tokenA:"DHG", tokenB:"PR25", label:"Dragon's Nest", accent:"#ef4444", formBg:"#140a0a", formBorder:"#ef444412", market:"0x15e77852448ae067da0b4EF6cDC481b9125096e0", primaryMarket:"0x5a1F56f5913C6B919F3Cb191eC90871e8Ce037A9", marketAbi:MABI_POLY, payToken:WETH_POLY, paySymbol:"WETH" },
+  durgan:{ powerUp:"0x9Ef113275695C30782500E15b6219293556eb1E7", tokenA:"DDD", tokenB:"PR25", label:"Durgan Dynasty", accent:"#818cf8", formBg:"#0c0c18", formBorder:"#818cf812", market:"0xdDB428B147AdC9E7b5986AE1EA11da69aaD911cA", primaryMarket:"0xe976fb6e949b9Fe59Cd185085e646eb6D6e44bAc", marketAbi:MABI_POLY, payToken:WETH_POLY, paySymbol:"WETH" },
+  pirate:{ powerUp:"0x711965cBcbC776502d451eeC57a127455f6976CA", tokenA:"PKT", tokenB:"PR25", label:"Pirate's Cove", accent:"#22d3ee", formBg:"#0a1218", formBorder:"#22d3ee12", market:"0xE1e8Df2aB4D3912513FB940D1c1d96f8566D6C0D", primaryMarket:"0x778E4180d1CB9d70647ec2DAA842183F4830858a", marketAbi:MABI_POLY, payToken:WETH_POLY, paySymbol:"WETH" },
+  ork:{ powerUp:"0xc55A2895897efB256bCe4a8f1Ce0656E46dE7fA4", tokenA:"OGC", tokenB:"PR25", label:"Ork Warcamp", accent:"#dc2626", formBg:"#180a0a", formBorder:"#dc262612", market:"0x15f5Cb77Ad0DC59C4F3EfD8dbD1234212D5169e1", primaryMarket:"0xa0494Cab2f4cd687B2efa28F48195698EE1637af", marketAbi:MABI_POLY, payToken:WETH_POLY, paySymbol:"WETH" }
 };
 
 function switchNation(id){
   currentNation=id;
   document.querySelectorAll(".nation-btn").forEach(function(b){b.classList.remove("active")});
   document.querySelectorAll(".nation-btn."+id).forEach(function(b){b.classList.add("active")});
-  // Show/hide igypt-only tabs (Browse, My NFTs, My Listings)
-  document.querySelectorAll("[data-igypt-only]").forEach(function(b){b.style.display=id==="igypt"?"":"none"});
+  // Show/hide market tabs (Browse, My NFTs, My Listings) for nations with a market contract
+  var hasMarket=!!NATIONS[id].market;
+  document.querySelectorAll("[data-igypt-only]").forEach(function(b){b.style.display=hasMarket?"":"none"});
   // If on a hidden tab, switch to catalog or powerup
   var curTab=document.querySelector(".page.on");
-  if(curTab&&id!=="igypt"){
+  if(curTab&&!hasMarket){
     var curId=curTab.id.replace("p-","");
     if(curId==="browse"||curId==="wallet"||curId==="listings")tab("powerup");
   }
+  // Reload browse if switching to a nation with a market
+  if(hasMarket&&document.querySelector(".page.on")&&document.querySelector(".page.on").id==="p-browse")loadBrowse();
   // Theme body
-  document.body.className=id==="elven"?"theme-elven":id==="frontier"?"theme-grove":id==="dwarven"?"theme-dwarven":id==="dragon"?"theme-dragon":"";
+  var themes={elven:"theme-elven",frontier:"theme-grove",dwarven:"theme-dwarven",dragon:"theme-dragon",durgan:"theme-durgan",pirate:"theme-pirate",ork:"theme-ork"};
+  document.body.className=themes[id]||"";
   // Toggle power-up content
-  $("pu-igypt").style.display=id==="igypt"?"block":"none";
-  $("pu-elven").style.display=id==="elven"?"block":"none";
-  $("pu-frontier").style.display=id==="frontier"?"block":"none";
-  $("pu-dwarven").style.display=id==="dwarven"?"block":"none";
-  $("pu-dragon").style.display=id==="dragon"?"block":"none";
+  var puIds=["igypt","elven","frontier","dwarven","dragon","durgan","pirate","ork"];
+  for(var pi=0;pi<puIds.length;pi++){var el=$("pu-"+puIds[pi]);if(el)el.style.display=puIds[pi]===id?"block":"none"}
   // Style the form box
   var n=NATIONS[id];
   $("puFormBox").style.background=n.formBg;
   $("puFormBox").style.borderColor=n.formBorder;
   $("puFormTitle").style.color=n.accent;
-  $("puFormTitle").textContent=id==="igypt"?"Make Your Offering":id==="frontier"?"Tend the Grove":id==="dwarven"?"Work the Forge":id==="dragon"?"Feed the Hoard":"Channel the Roots";
+  var titles={igypt:"Make Your Offering",elven:"Channel the Roots",frontier:"Tend the Grove",dwarven:"Work the Forge",dragon:"Feed the Hoard",durgan:"Serve the Dynasty",pirate:"Pay the Tribute",ork:"Smash the Anvil"};
+  $("puFormTitle").textContent=titles[id]||"Make Your Offering";
   // Populate pair selector if nation has pairs
   if(n.pairs){
     var sel=$("puPairSelect");
