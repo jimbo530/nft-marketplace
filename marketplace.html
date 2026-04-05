@@ -842,12 +842,16 @@ var MABI_POLY = [
 
 // Artist wallet lookup — locked per collection so sellers can't change it
 var DEFAULT_ARTIST = "0x0780b1456D5E60CF26C8Cd6541b85E805C8c05F2";
+var ARTIST_OVERRIDES = {
+  "0x2953399124f0cbb46d2cbacd8a89cf0599974963": "0xdd84aa06222706B9f822b5925ED4C7628080C6C6" // DeFi Space Donkeys
+};
 var NO_DEFAULT_ARTIST = [
-  "0x2953399124f0cbb46d2cbacd8a89cf0599974963", // Space Donkeys
   "0x537ee25af1f6cdc1de66562dd0be88ea2046338f"  // Mandala Light Codes
 ];
 function getArtist(addr){
-  if(NO_DEFAULT_ARTIST.indexOf(addr.toLowerCase())!==-1)return "";
+  var low=addr.toLowerCase();
+  if(ARTIST_OVERRIDES[low])return ARTIST_OVERRIDES[low];
+  if(NO_DEFAULT_ARTIST.indexOf(low)!==-1)return "";
   return DEFAULT_ARTIST;
 }
 
@@ -2071,7 +2075,7 @@ var NATIONS={
   },
   frontier:{ powerUp:"0x94E4C09aF73c36F07459A753A50e4a93291427E5", tokenA:"BTN", tokenB:"PR25", label:"Magic Grove", accent:"#4ade80", formBg:"#0a120c", formBorder:"#4ade8012", market:"0x07c256F83ec19E59E93583daEd13811d448bAe75", primaryMarket:"0x54C5C94C26F4d1a8Bb7bA4214cc8c326EF107918", marketAbi:MABI_POLY, payToken:WETH_POLY, paySymbol:"WETH" },
   dwarven:{ powerUp:"0xD0160A75e1cC3DEdE02bAd2e144854447d531971", tokenA:"LGP", tokenB:"PR25", label:"Dwarven Fortress", accent:"#d97706", formBg:"#14100a", formBorder:"#d9770612", market:"0x35883900dc8aAFefE09511A96a972dd7510619Bf", primaryMarket:"0xc891dCc1863eFCaB1C3c4D10A07Ca70f115125d1", marketAbi:MABI_POLY, payToken:WETH_POLY, paySymbol:"WETH" },
-  dragon:{ powerUp:"0x1A9F822923A8Db6FB99c238F20eDF1ddADA10300", tokenA:"DHG", tokenB:"PR25", label:"Dragon's Nest", accent:"#ef4444", formBg:"#140a0a", formBorder:"#ef444412", market:"0x15e77852448ae067da0b4EF6cDC481b9125096e0", primaryMarket:"0x5a1F56f5913C6B919F3Cb191eC90871e8Ce037A9", marketAbi:MABI_POLY, payToken:WETH_POLY, paySymbol:"WETH" },
+  dragon:{ powerUp:"0x31E4a2e574EC52f6629B6c4507FC57e8D9Ad3942", tokenA:"DHG", tokenB:"PR25", label:"Dragon's Nest", accent:"#ef4444", formBg:"#140a0a", formBorder:"#ef444412", market:"0x303eCe9e707c1f24B6b586d8d4CaA6ea7E9AB272", primaryMarket:"0xbf229a9eF9A8283D671D16402Ab89A4b650880d6", marketAbi:MABI_POLY, payToken:WETH_POLY, paySymbol:"WETH" },
   durgan:{ powerUp:"0x9Ef113275695C30782500E15b6219293556eb1E7", tokenA:"DDD", tokenB:"PR25", label:"Durgan Dynasty", accent:"#818cf8", formBg:"#0c0c18", formBorder:"#818cf812", market:"0xdDB428B147AdC9E7b5986AE1EA11da69aaD911cA", primaryMarket:"0xe976fb6e949b9Fe59Cd185085e646eb6D6e44bAc", marketAbi:MABI_POLY, payToken:WETH_POLY, paySymbol:"WETH" },
   pirate:{ powerUp:"0x711965cBcbC776502d451eeC57a127455f6976CA", tokenA:"PKT", tokenB:"PR25", label:"Pirate's Cove", accent:"#22d3ee", formBg:"#0a1218", formBorder:"#22d3ee12", market:"0xE1e8Df2aB4D3912513FB940D1c1d96f8566D6C0D", primaryMarket:"0x778E4180d1CB9d70647ec2DAA842183F4830858a", marketAbi:MABI_POLY, payToken:WETH_POLY, paySymbol:"WETH" },
   ork:{ powerUp:"0xc55A2895897efB256bCe4a8f1Ce0656E46dE7fA4", tokenA:"OGC", tokenB:"PR25", label:"Ork Warcamp", accent:"#dc2626", formBg:"#180a0a", formBorder:"#dc262612", market:"0x15f5Cb77Ad0DC59C4F3EfD8dbD1234212D5169e1", primaryMarket:"0xa0494Cab2f4cd687B2efa28F48195698EE1637af", marketAbi:MABI_POLY, payToken:WETH_POLY, paySymbol:"WETH" }
