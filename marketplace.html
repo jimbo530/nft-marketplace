@@ -1135,8 +1135,8 @@ function buildCardBack(addr,lpUsd,chain){
     // Compute actual per-token USD from per-unit prices
     for(var ri=0;ri<tokens.length;ri++){
       var t=tokens[ri];
-      var addr=(t.addr||"").toLowerCase();
-      var perUnit=addr?tokenUsdPrices[addr]||0:0;
+      var tAddr=(t.addr||"").toLowerCase();
+      var perUnit=tAddr?tokenUsdPrices[tAddr]||0:0;
       t.usdValue=t.amount*perUnit;
     }
     rows=renderGroup("Impact","#22c55e",impact,true)+renderGroup("Game","#c9a84c",game,true)+renderGroup("Traditional","#60a5fa",trad,true);
@@ -1144,10 +1144,11 @@ function buildCardBack(addr,lpUsd,chain){
     rows='<div style="text-align:center;color:#554d40;padding:20px;font-size:12px;">No token data yet</div>';
   }
   var scanUrl=(chain==="base"?"https://basescan.org/address/":"https://polygonscan.com/address/")+addr;
+  var scanLabel=chain==="base"?"View on BaseScan":"View on PolygonScan";
   return'<div class="card-back">'+
     '<div class="card-back-hdr"><span>Token Breakdown</span><span class="back-total">'+totalStr+'</span></div>'+
     '<div class="card-back-body">'+rows+'</div>'+
-    '<a href="'+scanUrl+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:block;text-align:center;padding:8px;font-size:11px;color:#c9a84c;text-decoration:none;border-top:1px solid #c9a84c22;">View on PolygonScan &#x2197;</a>'+
+    '<a href="'+scanUrl+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:block;text-align:center;padding:8px;font-size:11px;color:#c9a84c;text-decoration:none;border-top:1px solid #c9a84c22;">'+scanLabel+' &#x2197;</a>'+
     '<div class="card-back-foot">tap to flip back</div></div>';
 }
 
