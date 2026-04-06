@@ -1106,7 +1106,7 @@ async function loadAllBacking(){
 function getBackingUsd(addr){return backingMap[addr.toLowerCase()]||"0.00"}
 function fmtUsd(s){return"$"+parseFloat(s).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
 
-function buildCardBack(addr,lpUsd){
+function buildCardBack(addr,lpUsd,chain){
   var tokens=getTokens(addr);
   var totalStr=lpUsd&&lpUsd!=="0.00"?fmtUsd(lpUsd):"--";
   var rows="";
@@ -1143,9 +1143,11 @@ function buildCardBack(addr,lpUsd){
   } else {
     rows='<div style="text-align:center;color:#554d40;padding:20px;font-size:12px;">No token data yet</div>';
   }
+  var scanUrl=(chain==="base"?"https://basescan.org/address/":"https://polygonscan.com/address/")+addr;
   return'<div class="card-back">'+
     '<div class="card-back-hdr"><span>Token Breakdown</span><span class="back-total">'+totalStr+'</span></div>'+
     '<div class="card-back-body">'+rows+'</div>'+
+    '<a href="'+scanUrl+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:block;text-align:center;padding:8px;font-size:11px;color:#c9a84c;text-decoration:none;border-top:1px solid #c9a84c22;">View on PolygonScan &#x2197;</a>'+
     '<div class="card-back-foot">tap to flip back</div></div>';
 }
 
@@ -1272,7 +1274,7 @@ async function renderWalletCard(nft,g){
     '<div class="card-status list-btn">List Now</div>';
 
   var wrap=mk("div","card-flip");
-  wrap.innerHTML='<div class="card-inner"><div class="card card-front">'+frontHtml+'</div>'+buildCardBack(nft.addr,lpVal)+'</div>';
+  wrap.innerHTML='<div class="card-inner"><div class="card card-front">'+frontHtml+'</div>'+buildCardBack(nft.addr,lpVal,nft.chain)+'</div>';
 
   var flipBtn=wrap.querySelector(".flip-btn");
   if(flipBtn){flipBtn.onclick=function(e){e.stopPropagation();wrap.classList.add("flipped")}}
@@ -1399,7 +1401,7 @@ function renderOwnedCard(entry,g){
      '<div class="card-status for-sale">Listed</div>');
 
   var wrap=mk("div","card-flip");
-  wrap.innerHTML='<div class="card-inner"><div class="card card-front">'+frontHtml+'</div>'+buildCardBack(entry.addr,entry.lpUsd)+'</div>';
+  wrap.innerHTML='<div class="card-inner"><div class="card card-front">'+frontHtml+'</div>'+buildCardBack(entry.addr,entry.lpUsd,entry.chain)+'</div>';
 
   var flipBtn=wrap.querySelector(".flip-btn");
   if(flipBtn){flipBtn.onclick=function(e){e.stopPropagation();wrap.classList.add("flipped")}}
@@ -1767,7 +1769,7 @@ function renderCatalogCard(entry,g){
 
   var wrap=mk("div","card-flip");
   wrap.setAttribute("data-addr",entry.addr);
-  wrap.innerHTML='<div class="card-inner"><div class="card card-front">'+frontHtml+'</div>'+buildCardBack(entry.addr,entry.lpUsd)+'</div>';
+  wrap.innerHTML='<div class="card-inner"><div class="card card-front">'+frontHtml+'</div>'+buildCardBack(entry.addr,entry.lpUsd,entry.chain)+'</div>';
 
   // Flip button click
   var flipBtn=wrap.querySelector(".flip-btn");
