@@ -2,5 +2,28 @@ node_modules/
 build/
 build2/
 build-poly/
+
+# Solidity build artifacts
 *.bin
 *.abi
+
+# Generated per-nation deployer pages
+# (output of generate-primary-deploys.js, generate-resale-all.js, generate-powerup-all.js)
+deploy-primary-igs.html
+deploy-primary-egp.html
+deploy-primary-btn.html
+deploy-primary-lgp.html
+deploy-primary-dhg.html
+deploy-primary-ddd.html
+deploy-primary-pkt.html
+deploy-primary-ogc.html
+deploy-resale-btn.html
+deploy-resale-ddd.html
+deploy-resale-dhg.html
+deploy-resale-egp.html
+deploy-resale-lgp.html
+deploy-resale-ogc.html
+deploy-resale-pkt.html
+deploy-powerup-dhg.html
+deploy-powerup-elven.html
+deploy-powerup-poly.html
